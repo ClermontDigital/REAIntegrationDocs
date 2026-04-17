@@ -1,0 +1,18 @@
+{
+    "name": "rea-docs-fetcher",
+    "version": "0.1.0",
+    "private": true,
+    "type": "module",
+    "description": "Standalone tool that mirrors partner.realestate.com.au docs to local markdown for agent consumption.",
+    "license": "Apache-2.0",
+    "scripts": {
+        "fetch": "node fetch.mjs",
+        "fetch:headless": "node fetch.mjs --headless",
+        "fetch:force": "node fetch.mjs --force",
+        "postinstall": "playwright install chromium"
+    },
+    "dependencies": {
+        "playwright": "^1.48.0",
+        "turndown": "^7.2.0"
+    }
+}

@@ -1,0 +1,447 @@
+openapi: '3.0.2'
+info:
+  title: Listing Upload API
+  description: An API to accept listing uploads and report on the progress of these listing uploads.
+  version: '1'
+servers:
+  - url: https://api.realestate.com.au
+    description: Production API
+security:
+  - PartnerPlatform:
+      - 'listing:listings:write'
+paths:
+  '/listing/v1/upload':
+    post:
+      tags:
+        - Upload
+      summary: Accepts an REAXML document containing a single listing for processing.
+      description: The Listing Upload API will return an uploadId after submission.
+      operationId: uploadXml
+      externalDocs:
+        description: Find REAXML schema here
+        url: https://partner.realestate.com.au/documentation/api/listings/elements/
+      requestBody:
+        description: REAXML document containing one single listing
+        content:
+          application/xml:
+            schema:
+              externalDocs:
+                url: https://partner.realestate.com.au/documentation//api/listings/elements/
+            example: |
+              <?xml version="1.0" encoding="UTF-8"?>
+               <propertyList date="2018-06-15-11:29:16">
+                 <residential status="current" modTime="2019-06-15-11:29:15">
+                   <agentID>XNWTRD</agentID>
+                   <uniqueID>rea_111234324</uniqueID>
+                   <listingAgent id="1">
+                     <name>Jayne Doherty</name>
+                     <telephone type="mobile">123</telephone>
+                     <email>test@test.com.au</email>
+                   </listingAgent>
+                   <newConstruction>1</newConstruction>
+                   <category name="Apartment" />
+                   <authority value="exclusive" />
+                   <underOffer value="no" />
+                   <isHomeLandPackage value="no" />
+                   <address streetview="no" display="no">
+                     <street>test road</street>
+                     <suburb display="yes">Errinundra</suburb>
+                     <state>VIC</state>
+                     <postcode>3889</postcode>
+                     <country>AU</country>
+                     <streetNumber>8/333</streetNumber>
+                   </address>
+                   <municipality />
+                   <headline>North facing apartment near Riversdale Village</headline>
+                   <description />
+                   <price display="yes">450000.00</price>
+                   <priceView>Private Sale $460,000</priceView>
+                   <bond />
+                   <idealFor />
+                   <views />
+                   <ecoFriendly>
+                     <solarPanels>no</solarPanels>
+                     <solarHotWater>no</solarHotWater>
+                     <waterTank>no</waterTank>
+                     <greyWaterSystem>no</greyWaterSystem>
+                   </ecoFriendly>
+                   <features>
+                     <bedrooms>2</bedrooms>
+                     <bathrooms>1</bathrooms>
+                     <carports>1</carports>
+                     <garages>0</garages>
+                     <openSpaces>0</openSpaces>
+                     <yearBuilt value="1976" />
+                     <yearLastRenovated value="1988" />
+                   </features>
+                   <landDetails />
+                   <buildingDetails />
+                   <objects>
+                     <img modTime="2018-06-15-11:29:16" file="images.jpeg" id="m" format="jpeg" />
+                     <img id="a" />
+                   </objects>
+                   <videoLink href="" />
+                   <externalLink href="" />
+                 </residential>
+               </propertyList>
+        required: true
+      responses:
+        '202':
+          description: The listing has been accepted for processing.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadSuccessResponse'
+        '400':
+          description: Processing the upload request failed. Bad Request, the Xml is invalid..
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "400",
+                    "title": Bad Request,
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+        '403':
+          description: Forbidden
+        '404':
+          description: Processing the upload request failed. Verify that the URL is correct.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "404",
+                    "title": Not found,
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+        '405':
+          description: Method Not Allowed
+        '406':
+          description: Processing the upload request failed. Verify that `Accept.MediaType` is correct.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "406",
+                    "title": Not acceptable,
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+        '413':
+          description: Payload Too Large
+        '500':
+          description: Processing the upload request failed. The listing may not have been submitted for processing.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "500",
+                    "title": Unexpected error has occurred,
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+      security:
+        - PartnerPlatform:
+            - 'listing:listings:write'
+    get:
+      parameters:
+        - in: query
+          name: agencyId
+          description: The REAXML agentID
+          required: true
+          schema:
+            $ref: '#/components/schemas/AgencyId'
+        - in: query
+          name: externalListingId
+          description: The REAXML uniqueID of the listing
+          required: true
+          schema:
+            $ref: '#/components/schemas/ExternalListingId'
+      tags:
+        - Report
+      summary: Search upload reports
+      description: Search reports for a given `externalListingId` and `agencyId`
+      operationId: searchUploadReports
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchReportResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: Verify that the URL is correct.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "404",
+                    "title": Not found,
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+        '405':
+          description: Method Not Allowed
+        '406':
+          description: Verify that `Accept.MediaType` is correct.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "406",
+                    "title": Not acceptable,
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+        '500':
+          description: Search report request failed.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "500",
+                    "title": Unexpected error has occurred,
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+      security:
+        - PartnerPlatform:
+            - 'listing:listings:write'
+  '/listing/v1/upload/{uploadId}':
+    get:
+      parameters:
+        - in: path
+          name: uploadId
+          description: Upload id returned by the Listing Upload API
+          required: true
+          schema:
+            $ref: '#/components/schemas/UploadId'
+      tags:
+        - Report
+      summary: View listing upload report
+      description: View the report for a given upload id
+      operationId: getUploadReport
+      responses:
+        '200':
+          description: Ok
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportResponse'
+        '403':
+          description: Forbidden
+        '404':
+          description: The report does not exist yet for the upload id or the URL may be malformed.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "404",
+                    "title": Not found,
+                    "detail": "Upload not found 6096a9ea-a0f6-4997-81d7-9c6c038abb8a",
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+        '405':
+          description: Method Not Allowed
+        '406':
+          description: Verify that `Accept.MediaType` is correct.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "406",
+                    "title": Not acceptable,
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+        '500':
+          description: View report request failed.
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Error'
+                example:
+                  {
+                    "status": "500",
+                    "title": Unexpected error has occurred,
+                    "meta": {
+                      "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+                    }
+                  }
+      security:
+        - PartnerPlatform:
+            - 'listing:listings:write'
+components:
+  schemas:
+    UploadId:
+      type: string
+      format: uuid
+      example: 'ba879408-8ccc-11e9-9f4b-54e1ad4ab1b6'
+    Upload:
+      type: object
+      properties:
+        uploadId:
+          $ref: '#/components/schemas/UploadId'
+        lastModified:
+          type: string
+          format: datetime
+          example: '2018-07-30T18:30:00.000Z'
+    AgencyId:
+      type: string
+      format: string
+      example: ABCDEF
+    ListingId:
+      type: string
+      example: 131603746
+    ExternalListingId:
+      type: string
+      example: 123456
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+        title:
+          type: string
+        meta:
+          type: object
+          properties:
+            transactionId:
+              type: string
+    ResponseWarnings:
+      type: array
+      items:
+        type: object
+        properties:
+          type:
+            type: string
+            example: 'listing'
+          field:
+            type: string
+            example: 'display_price'
+          messages:
+            type: array
+            items:
+              type: string
+              example: "Please update your display price to be within 10% of the search price. The listing has been published with the display price 'Awaiting Price Guide' until updated."
+          helpCentreUrl:
+            type: string
+            example: 'https://help.realestate.com.au/hc/en-us/categories/20857782169113'
+    ResponseErrors:
+      type: array
+      items:
+        type: object
+        properties:
+          type:
+            type: string
+            example: 'listing'
+          field:
+            type: string
+            example: 'headline'
+          messages:
+            type: array
+            items:
+              type: string
+              example: "A property 'headline' has not been provided. Please provide a headline in your uploader and re-feed the listing."
+          helpCentreUrl:
+            type: string
+            example: 'https://help.realestate.com.au/hc/en-us/categories/20857782169113'
+    UploadSuccessResponse:
+      type: object
+      properties:
+        uploadId:
+          type: string
+          description: An identifier issued by the API for tracking processing of this listing upload.
+          example: '36d2b88b-aecd-4323-b40c-dad8fb514ea4'
+    ReportResponse:
+      type: object
+      properties:
+        uploadId:
+          $ref: '#/components/schemas/UploadId'
+        completedTime:
+          nullable: true
+          type: string
+          example: "2019-06-12T15:11:46+10:00"
+        progress:
+          type: string
+          enum:
+            - IN_PROGRESS
+              COMPLETED
+        result:
+          nullable: true
+          type: string
+          enum:
+            - INTERNAL_ERROR
+              PROCESSED
+              SKIPPED
+              NEW
+              DELETED
+              UNCHANGED
+        externalListingId:
+          $ref: '#/components/schemas/ListingId'
+        listingId:
+          $ref: '#/components/schemas/ListingId'
+        agencyId:
+          $ref: '#/components/schemas/AgencyId'
+        issues:
+          type: object
+          properties:
+            warnings:
+              $ref: '#/components/schemas/ResponseWarnings'
+            errors:
+              $ref: '#/components/schemas/ResponseErrors'
+    SearchReportResponse:
+      type: array
+      items:
+        $ref: '#/components/schemas/Upload'
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            listing:listings:write: Upload listings

@@ -1,0 +1,191 @@
+openapi: 3.1.1
+info:
+  title: Campaign API - eDM Performance
+  description: High-level details of eDM campaigns
+  version: 1.2.9
+servers:
+  - url: https://api.realestate.com.au/campaign/v1/edm-performance
+security:
+  - PartnerPlatform:
+      - campaign:edm-performance:read
+paths:
+  /edm-performance:
+    get:
+      summary: Get list of campaigns as per user's permission
+      description: >
+        The /edm-performance endpoint returns a list of campaigns that a user is
+        authorised to view.
+
+        It provides the user with high-level detail of each returned campaign.
+
+        By default, this endpoint returns 20 campaigns ordered by the send date,
+        from newest to oldest and returns the first page of the results.
+      tags:
+        - eDM Performance
+      responses:
+        "200":
+          description: A list of campaigns for the user.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/EdmPerformanceItems"
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "401":
+          description: The request requires a valid authentication token
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "403":
+          description: Access to the requested resource is forbidden
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "404":
+          description: No edm-performance resources were found for the requested parameters
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        default:
+          description: Unexpected error
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+      security:
+        - PartnerPlatform:
+            - campaign:edm-performance:read
+components:
+  schemas:
+    EdmPerformanceItems:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/EdmPerformance"
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            prev:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+    EdmPerformance:
+      type: object
+      properties:
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+        flightId:
+          type: string
+          description: Unique identifier for the eDM campaign.
+        campaignId:
+          type: string
+          description: n/a.
+        accountManager:
+          $ref: "#/components/schemas/AccountManager"
+          description: Information about the REA account manager servicing the campaign.
+        advertiser:
+          $ref: "#/components/schemas/Advertiser"
+          description: Information about the advertising agency running the campaign.
+        name:
+          type: string
+          description: Name of the campaign.
+        sendDate:
+          type: string
+          description: date of eDM sent.
+        sends:
+          type: string
+          description: number of eDM sent.
+        clicks:
+          type: string
+          description: Number of delivered clicks for the campaign.
+        uniqueClicks:
+          type: string
+          description: Number of delivered unique clicks for the campaign.
+        clickThroughRate:
+          type: string
+          description: Number of clicks divided by total impressions served.
+        flatRateLocal:
+          type: string
+          description: Total spent on campaign to date.
+        leads:
+          type: string
+          description: Number of delivered leads for the campaign.
+        costPerLead:
+          type: string
+          description: The amount paid for each lead as the result of campaign activity
+            and value.
+        product:
+          type: string
+          description: Type of advertising product - generally "Hyper Targeted", "Solus
+            State" or "New Homes".
+    AccountManager:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the account manager.
+        name:
+          type: string
+          description: Name of the account manager.
+    Advertiser:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the advertiser.
+        name:
+          type: string
+          description: Name of the advertising agency.
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          description: Hyperlink to a Campaign API resource
+    Errors:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        meta:
+          type: object
+          properties:
+            transactionId:
+              type: string
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            campaign:edm-performance:read: Read edm-performance records

@@ -1,0 +1,442 @@
+openapi: 3.1.1
+info:
+  version: 1.0.0
+  title: Tenant Selection API
+  description: Poll applications' details and update the application status.
+servers:
+  - url: https://api.realestate.com.au/applications/v1/rental
+security:
+  - PartnerPlatform:
+      - rent:applications:read
+      - rent:applications:write
+paths:
+  /applications/published/feed:
+    get:
+      tags:
+        - Tenant Selection API
+      summary: Poll published applications' details by happenedSince and
+        agencyIds(optional)
+      description: >
+        The `/applications/published/feed` endpoint returns a list of
+        applications ordered by publication date ascending which belong to the
+        agencies and have been published since the specific time. The response
+        includes the details of the application, the application url, array of
+        applicants, and details of the listing. The number of the applications
+        will be up to 25 per page. Retrieving without the parameter `agencyIds`
+        will return all the applications that belong to the agencies for which
+        the current partner is authorised.
+
+
+        **Support the following query parameters:**
+          - agencyIds(optional)
+          - happenedSince
+      operationId: getApplicationsUsingGET
+      parameters:
+        - schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+          name: agencyIds
+          in: query
+          description: A comma-separated list of `agency id` to query the applications
+            which belong to them. If one of the agency is invalid, the request
+            will be rejected.
+          required: false
+        - schema:
+            type: string
+            format: date-time
+          name: happenedSince
+          in: query
+          description: The endpoint will return the applications published since
+            `happenedSince` (exclusive). This parameter should be formatted as
+            ISO-8601 datetime, i.e. `2020-08-27T22:47:01.604Z`. When using
+            Postman, curl, or a web application, it must use correct URL
+            encoding.
+          required: true
+      responses:
+        "200":
+          description: A set of applications which belong to the agencies and have been
+            published since specific time.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/PublishedApplicationItem"
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: The authentication token in the request is invalid or the agency id
+            is invalid.
+      security:
+        - PartnerPlatform:
+            - rent:applications:read
+  /applications/updated/feed:
+    get:
+      tags:
+        - Tenant Selection API
+      summary: Poll updated applications' details by happenedSince and
+        agencyIds(optional)
+      description: >
+        The `/applications/updated/feed` endpoint returns a list of updated
+        applications which status is SUCCESSFUL or UNSUCCESSFUL ordered by last
+        updated date ascending which belong to the agencies and have been
+        updated since the specific time. The response includes the details of
+        the application, the application url, array of applicants, and details
+        of the listing. The number of the applications will be up to 25 per
+        page. Retrieving without the parameter `agencyIds` will return all the
+        applications that belong to the agencies for which the current partner
+        is authorised.
+
+
+        **Support the following query parameters:**
+          - agencyIds(optional)
+          - happenedSince
+      operationId: getUpdatedApplicationsUsingGET
+      parameters:
+        - schema:
+            type: array
+            items:
+              type: string
+          style: form
+          explode: false
+          name: agencyIds
+          in: query
+          description: A comma-separated list of `agency id` to query the applications
+            which belong to them. If one of the agency is invalid, the request
+            will be rejected.
+          required: false
+        - schema:
+            type: string
+            format: date-time
+          name: happenedSince
+          in: query
+          description: The endpoint will return the applications last updated since
+            `happenedSince` (exclusive). This parameter should be formatted as
+            ISO-8601 datetime, i.e. `2020-08-27T22:47:01.604Z`. When using
+            Postman, curl, or a web application, it must use correct URL
+            encoding.
+          required: true
+      responses:
+        "200":
+          description: A set of applications which belong to the agencies and have been
+            updated since a specific time.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/UpdatedApplicationItem"
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: The authentication token in the request is invalid or the agency id
+            is invalid.
+      security:
+        - PartnerPlatform:
+            - rent:applications:read
+  /applications/{applicationId}/status:
+    put:
+      tags:
+        - Tenant Selection API
+      summary: update application status
+      description: >
+        The `/applications/{applicationId}/status` endpoint allows an authorized
+        request to update the application's `status` and `statusLastUpdatedAt`.
+      operationId: updateApplicationStatusUsingPUT
+      parameters:
+        - schema:
+            type: string
+            format: uuid
+          name: applicationId
+          in: path
+          description: The application which you want to update the `status` and
+            `statusLastUpdatedAt`. The field `applicationId` could be retrieved
+            from the corresponding field in each application in the results of
+            the first endpoint.
+          required: true
+      responses:
+        "204":
+          description: The `status` and/or `statusLastUpdatedAt` of the specified
+            application have been updated successfully.
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: The request requires a valid authentication token or the service
+            could not find a valid application via the token to update.
+        "409":
+          description: The `fromStatus` does not match the current status of the
+            application.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - PartnerPlatform:
+            - rent:applications:write
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateApplicationStatusRequest"
+        description: Include the fields `fromStatus`, `toStatus`, and
+          `statusLastUpdatedAt`, which will update the specified application.
+        required: true
+components:
+  schemas:
+    PublishedApplicationItem:
+      type: object
+      properties:
+        _embedded:
+          $ref: "#/components/schemas/Embedded"
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+      title: PublishedApplicationItem
+    UpdatedApplicationItem:
+      type: object
+      properties:
+        _embedded:
+          $ref: "#/components/schemas/UpdatedApplicationsEmbedded"
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+      title: UpdatedApplicationItem
+    Embedded:
+      type: object
+      properties:
+        publishedApplications:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublishedApplication"
+    UpdatedApplicationsEmbedded:
+      type: object
+      properties:
+        updatedApplications:
+          type: array
+          items:
+            $ref: "#/components/schemas/UpdatedApplication"
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          description: Hyperlink to a Tenant Selection API resource
+      title: Links
+    PublishedApplication:
+      type: object
+      properties:
+        applicants:
+          type: array
+          description: A list of applicants.
+          items:
+            $ref: "#/components/schemas/Applicant"
+        applicationDetails:
+          $ref: "#/components/schemas/ApplicationDetails"
+        applicationDetailsUrl:
+          type: string
+          description: The URL to view the application informations.
+        applicationId:
+          type: string
+          format: uuid
+          description: Unique identifier representing a specific application.
+        listingDetails:
+          $ref: "#/components/schemas/ListingDetails"
+      title: PublishedApplication
+    UpdatedApplication:
+      type: object
+      properties:
+        applicants:
+          type: array
+          description: A list of applicants.
+          items:
+            $ref: "#/components/schemas/Applicant"
+        applicationDetails:
+          $ref: "#/components/schemas/ApplicationDetails"
+        applicationDetailsUrl:
+          type: string
+          description: The URL to view the application informations.
+        applicationId:
+          type: string
+          format: uuid
+          description: Unique identifier representing a specific application.
+        listingDetails:
+          $ref: "#/components/schemas/ListingDetails"
+      title: UpdatedApplication
+    Applicant:
+      type: object
+      properties:
+        applicantContactDetails:
+          $ref: "#/components/schemas/ApplicantContactDetails"
+        applicantREAId:
+          type: string
+          format: uuid
+          description: Unique identifier representing a specific applicant.
+        primaryApplicant:
+          type: boolean
+          description: To indicate this is a primary applicant or not.
+        pets:
+          $ref: "#/components/schemas/Pets"
+        hasOrWillInspect:
+          type: boolean
+          description: Whether the tenant has inspected or is going to inspect the property.
+        inspectionDate:
+          type: string
+          format: date
+          description: The date the tenant had inspected or is planning to inspect the
+            property.
+        otherOccupants:
+          type: integer
+          description: The number of non-lease holder occupants for application.
+      title: Applicant
+    Pets:
+      type: object
+      properties:
+        dogs:
+          type: integer
+          description: The number of dogs an applicant has(the number limit is 4, which
+            means 4 or more than 4 dogs).
+        cats:
+          type: integer
+          description: The number of cats an applicant has(the number limit is 4, which
+            means 4 or more than 4 cats).
+        others:
+          type: integer
+          description: The number of other pets an applicant has(the number limit is 4,
+            which means 4 or more than 4 pets).
+      title: Pets
+    ApplicantContactDetails:
+      type: object
+      properties:
+        email:
+          type: string
+          description: Can be null if the applicant use Apple social sign-in.
+        firstName:
+          type: string
+        lastName:
+          type: string
+        phoneNumber:
+          type: string
+      title: ApplicantContactDetails
+    ApplicationDetails:
+      type: object
+      properties:
+        leaseStartDate:
+          type: string
+          format: date
+          description: The move in date submitted by the applicant when they want to move
+            in.
+        leaseTerm:
+          type: integer
+          description: The lease term submitted by the applicant.
+        publishedAt:
+          type: string
+          format: date-time
+          description: The application published datetime with ISO-8601 DateTime format.
+        statusLastUpdatedAt:
+          type: string
+          format: date-time
+          description: The application last updated datetime with ISO-8601 DateTime format.
+        applicationStatus:
+          type: string
+          description: The status of the application.
+        isShortlisted:
+          type: boolean
+          description: Flag that indicates whether is an application shortlisted or not.
+        rentOfferAmount:
+          type: integer
+          description: The amount of rent the consumer has indicated they're willing to
+            pay weekly.
+      title: ApplicationDetails
+    ListingDetails:
+      type: object
+      properties:
+        address:
+          $ref: "#/components/schemas/ListingAddress"
+        reaAgencyId:
+          type: string
+          description: Unique identifier representing the listing agency.
+        reaListingId:
+          type: string
+          description: Unique identifier representing the listing.
+      title: ListingDetails
+    ListingAddress:
+      type: object
+      properties:
+        postCode:
+          type: string
+        state:
+          type: string
+        streetAddress:
+          type: string
+        suburb:
+          type: string
+      title: ListingAddress
+    UpdateApplicationStatusRequest:
+      type: object
+      properties:
+        fromStatus:
+          type: string
+          enum:
+            - PUBLISHED
+            - SUCCESSFUL
+            - UNSUCCESSFUL
+            - WITHDRAWN
+          description: The previous status of the application. See the API document to
+            check the valid status rules.
+        toStatus:
+          type: string
+          enum:
+            - SUCCESSFUL
+            - UNSUCCESSFUL
+            - WITHDRAWN
+          description: The next status of the application. See the API document to check
+            the valid status rules.
+        statusLastUpdatedAt:
+          type: string
+          format: date-time
+          description: Required a time when the status is updated and should format with
+            ISO-8601. The time should be a past or present time.
+      title: UpdateApplicationStatusRequest
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        transactionId:
+          type: string
+          format: uuid
+        details:
+          type: array
+          items:
+            properties:
+              error:
+                type: string
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            rent:applications:read: Fetch application records
+            rent:applications:write: Update application status

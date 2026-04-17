@@ -1,0 +1,417 @@
+openapi: 3.1.1
+info:
+  title: Lead Enrichment API
+  description: Retrieves enrichment information for enquiries
+  version: 1.0.0
+servers:
+  - url: https://api.realestate.com.au/lead-enrichment/v1
+security:
+  - PartnerPlatform:
+      - lead:enquiries:read
+paths:
+  /enrichments:
+    get:
+      description: Get enrichment data for multiple enquiries accessible to the partner
+      parameters:
+        - schema:
+            type: array
+            items:
+              type: string
+          name: enquiryIds
+          in: query
+          required: false
+          description: Comma-separated list of enquiry IDs to request
+        - schema:
+            type: string
+          in: query
+          name: since
+          required: false
+          description: >
+            an ISO-8601 timestamp (UTC) representing the point in time to begin
+            consuming enrichment data from. Filters results by enquiry creation
+            time.
+        - schema:
+            type: integer
+          name: pageIndex
+          in: query
+          description: Value representing page index starting 1 (default is 1)
+        - schema:
+            type: integer
+          in: query
+          name: pageSize
+          description: Value representing the number of enrichment data items per page
+            (default is 20)
+      responses:
+        "200":
+          description: A set of enrichment data items for enquiries accessible to the
+            partner
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: "#/components/schemas/Enrichments"
+        "400":
+          description: Bad request. The request is missing required fields or is malformed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized. The request requires a valid authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden. Access to the requested resource is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found. The requested resource cannot be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "405":
+          description: Method Not Allowed. The requested HTTP Method is not permitted on
+            this resource.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "406":
+          description: Not Acceptable. The response content type is not acceptable
+            according to the accept headers sent in the request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests
+            permitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error. Sorry, your request could not be serviced at
+            this time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - PartnerPlatform:
+            - lead:enquiries:read
+  /enrichments/{enquiryId}:
+    get:
+      summary: Get enrichment data for a single enquiry
+      description: Enrichment data for a single enquiry with given ID
+      parameters:
+        - schema:
+            type: string
+          name: enquiryId
+          in: path
+          required: true
+          description: Unique identifier representing a specific enquiry
+      responses:
+        "200":
+          description: Enrichment data item for enquiry with given ID
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: "#/components/schemas/Enrichment"
+        "400":
+          description: Bad request. The request is missing required fields or is malformed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized. The request requires a valid authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden. Access to the requested resource is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found. The requested resource cannot be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "405":
+          description: Method Not Allowed. The requested HTTP Method is not permitted on
+            this resource.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "406":
+          description: Not Acceptable. The response content type is not acceptable
+            according to the accept headers sent in the request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests
+            permitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error. Sorry, your request could not be serviced at
+            this time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - PartnerPlatform:
+            - lead:enquiries:read
+components:
+  schemas:
+    Enrichment:
+      type: object
+      properties:
+        enquiryId:
+          type: string
+          description: Unique identifier of an enquiry
+        listingId:
+          type: string
+          description: Unique identifier a listing
+        score:
+          type: number
+          description: X out of 10 value representing enquiry enrichment score
+        isFinalised:
+          type: boolean
+          description: Value indicating whether enrichment process has been completed and
+            data is fully available
+        enrichedAt:
+          type: string
+          description: Time that the enquiry was enriched in ISO8601 format
+        buyerReadiness:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+          description: Value indicating where the consumer is in their buy journey
+        listingEngagement:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+          description: Value indicating level of engagement with the listing
+        topSearchedConfigurationBathrooms:
+          type: array
+          description: Collection of consumer's top searched bedroom configurations. If
+            corresponding data is not available, it will be returned as an empty
+            array (`[]`)
+          items:
+            type: object
+            properties:
+              position:
+                type: integer
+                description: Number indicating the order of available search preference items
+              band:
+                type: string
+                enum:
+                  - low
+                  - medium
+                  - high
+                description: Value indicating level of consumer's interest in particular listing
+                  configuration
+              match:
+                type: boolean
+                description: Value indicating whether consumer's search preference matches the
+                  listing configuration
+              bathrooms:
+                type: integer
+                description: Number of bathrooms captured as consumer's listing configuration
+                  search preference
+        topSearchedConfigurationBedrooms:
+          type: array
+          description: Collection of consumer's top searched bathroom configurations. If
+            corresponding data is not available, it will be returned as an empty
+            array (`[]`)
+          items:
+            type: object
+            properties:
+              position:
+                type: integer
+                description: Number indicating the order of available search preference items
+              band:
+                type: string
+                enum:
+                  - low
+                  - medium
+                  - high
+                description: Value indicating level of consumer's interest in particular listing
+                  configuration
+              match:
+                type: boolean
+                description: Value indicating whether consumer's search preference matches the
+                  listing configuration
+              bedrooms:
+                type: integer
+                description: Number of bedrooms captured as consumer's search preference
+        topSearchedConstructionTypes:
+          type: array
+          description: Collection of consumer's top searched construction types. If
+            corresponding data is not available, it will be returned as an empty
+            array (`[]`)
+          items:
+            type: object
+            properties:
+              position:
+                type: integer
+                description: Number indicating the order of available search preference items
+              band:
+                type: string
+                enum:
+                  - low
+                  - medium
+                  - high
+                description: Value indicating level of consumer's interest in particular
+                  construction type
+              match:
+                type: boolean
+                description: Value indicating whether consumer's search preference matches the
+                  listing construction type
+              constructionType:
+                type: string
+                description: Construction type captured as consumer's search preference
+        topSearchedPropertyTypes:
+          type: array
+          description: Collection of consumer's top searched property types. If
+            corresponding data is not available, it will be returned as an empty
+            array (`[]`)
+          items:
+            type: object
+            properties:
+              position:
+                type: integer
+                description: Number indicating the order of available search preference items
+              band:
+                type: string
+                enum:
+                  - low
+                  - medium
+                  - high
+                description: Value indicating level of consumer's interest in particular
+                  property type
+              match:
+                type: boolean
+                description: Value indicating whether consumer's search preference matches the
+                  listing property type
+              propertyType:
+                type: string
+                enum:
+                  - house
+                  - land
+                  - townhouse
+                  - unit
+                  - other
+                description: Construction type captured as consumer's search preference
+        topSearchedSuburbs:
+          type: array
+          description: Collection of consumer's top searched suburbs. If corresponding
+            data is not available, it will be returned as an empty array (`[]`)
+          items:
+            type: object
+            properties:
+              position:
+                type: integer
+                description: Number indicating the order of available search preference items
+              band:
+                type: string
+                enum:
+                  - low
+                  - medium
+                  - high
+                description: Value indicating level of consumer's interest in particular suburb
+              match:
+                type: boolean
+                description: Value indicating whether consumer's search preference matches the
+                  listing location suburb
+              suburb:
+                type: string
+                description: Suburb name captured as consumer's search preference
+        _links:
+          type: object
+          description: Set of URLs related to the enrichment item, includes `self` URL and
+            `enquiry` URL
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            enquiry:
+              $ref: "#/components/schemas/Link"
+    Enrichments:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            items:
+              type: array
+              description: The collection of enrichment data items matching the request
+              items:
+                $ref: "#/components/schemas/Enrichment"
+        _links:
+          type: object
+          description: Set of URLs related to the enrichment item, includes `self` URL and
+            `next` page URL
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          description: Hyperlink to a resource
+    Error:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        title:
+          type: string
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            lead:enquiries:read: Read enquiry records

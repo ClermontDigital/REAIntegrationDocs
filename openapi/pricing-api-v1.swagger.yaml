@@ -1,0 +1,1421 @@
+openapi: 3.0.3
+info:
+  title: Pricing API
+  version: 0.1.1
+  description: >
+    ## Introduction
+
+    The Pricing API provides prices for the various portals in REA. A portal can
+    be realestate.com.au
+
+    for example. Given a specific *location, agencyId and section* on the portal
+    the
+
+    API will return a list of products along with their respective price.
+servers:
+  - url: 'https://api.realestate.com.au/'
+    description: production server with live data
+security:
+  - PartnerPlatform:
+      - "pricing:products:read"
+paths:
+  /prices/v1/realestate-properties:
+    get:
+      summary: Product prices when listing properties on realestate.com.au
+      description: >
+        Customers listing on realestate.com.au can find out the products they
+        have pre-selected to 
+
+        automatically purchase along with the discounted price for them. In
+        addition, this API will 
+
+        also return other products that they can optionally choose to purchase
+        or products that they
+
+        have a minimum commitment to purchase. All products returned will be
+        grouped in 1 of these
+
+        categories:
+          - **all:** these products will be automatically purchased on the customer's behalf when 
+          they list on realestate.com.au
+          - **elect:** these products are *not* automatically purchased, but customers can choose to
+          purchase them at their discretion. However, they have a minimum number that have been
+          committed to over a specified period of time
+          - **manual:** these products can be manually purchased by the customer and are not 
+          automatically purchased on their behalf.
+          - **flex:** these products can be manually purchased, but require the customer to have
+          the required number of **Campaign flex points** before they can access these product(s). **Note:** 
+          the data returned does not check if the customer has the points necessary to
+          purchase the product. Instead it just specifies how many points and price for each product.
+          - **cappedProduct:** the capped product can be manually purchased if customer doesn't have **all** contract.
+          Once they exceed the cap amount during the specified period,
+          the price indicated will be charged to the customer for each listing that uses this type of product.
+      operationId: realestatePrices
+      security:
+        - PartnerPlatform: ["pricing:products:read"]
+      parameters:
+        - name: agency_id
+          description: >
+            This is the unique 6 letter agency code for an office with an active
+            subscription. Refer
+
+            to 'API X' for a list of agency codes that can be accessed by the
+            caller.
+          in: query
+          required: true
+          style: form
+          schema:
+            type: string
+            pattern: '^[A-Z]{6}$'
+          example: FEXBNP
+        - name: suburb
+          description: >
+            The name of the suburb where the property is physically located, as
+            recognised by the 
+
+            appropriate state government. The suburb specified must be a
+            recognised suburb 
+
+            according to Geoscience Australia (https://www.ga.gov.au/placename/)
+          in: query
+          required: true
+          style: form
+          schema:
+            type: string
+          example: Sydney
+        - name: state
+          description: >-
+            This represents the state or territory where the listed property is
+            located. Available values "ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA".
+          in: query
+          required: true
+          style: form
+          schema:
+            type: string
+            enum:
+              - ACT
+              - NSW
+              - NT
+              - QLD
+              - SA
+              - TAS
+              - VIC
+              - WA
+          example: NSW
+        - name: postcode
+          description: >
+            This is the recognised postal code for the property. The postcode
+            specified must be
+
+            recognised by Australia Post (https://auspost.com.au/postcode)
+
+            officially
+          in: query
+          required: true
+          style: form
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+          example: '2000'
+        - name: section
+          description: >
+            This is the section on realestate.com.au that the customer wishes to
+            list the property in.
+
+            Depending on this section chosen, it may have an effect on the list
+            of products available
+
+            to the customer. When this isn't specified, it defaults to *buy*.
+            Available values "buy", "rent", "sold".
+          in: query
+          required: false
+          style: form
+          schema:
+            type: string
+            enum:
+              - buy
+              - rent
+              - sold
+            default: buy
+        - name: listing_type
+          description: >
+            This is the type of property that the customer wishes to list.
+            Depending on the type of
+
+            property, it may affect the list of products available to the
+            customer. When this isn't
+
+            specified, it defaults to *residential*. Available values "residential",
+            "land", "rural".
+          in: query
+          required: false
+          style: form
+          schema:
+            type: string
+            enum:
+              - residential
+              - land
+              - rural
+            default: residential
+        - name: reupgrade
+          description: >
+            This is used to indicate whether the product is priced for the
+            initial upgrade or
+
+            a subsequent reupgrade. When a property listed has already had a
+            product upgraded, 
+
+            it could entitle the customer to and additional discount on top of
+            the initial
+
+            upgrade discount. By default this is *false*.
+          in: query
+          required: false
+          style: form
+          schema:
+            type: boolean
+            default: false
+        - name: date
+          description: >
+            This is the date that the customer wishes to list, and to return the
+            price for this date.
+
+            This is an optional parameter and defaults to today's date
+            (Australian Eastern Daylight
+
+            Savings Time). **Note:** we will not allow a date in the past, or a
+            date longer than 46
+
+            days from today's date.
+          in: query
+          required: false
+          style: form
+          schema:
+            type: string
+            format: date-time
+          examples:
+            utc:
+              value: '2022-06-30T10:00:00Z'
+              summary: A date-time in UTC.
+            timezone:
+              value: '2022-06-30T00:00:00+10:00'
+              summary: A date-time with timezone.
+      responses:
+        '200':
+          description: >
+            The list of products and prices available to the customer for the
+            specified 
+
+            section and type of property.
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/realestate_products'
+              examples:
+                UMP:
+                  summary: Ultimate Marketing Package
+                  value:
+                    _links:
+                      self:
+                        href: >-
+                          https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                    section: buy
+                    listingType: residential
+                    reupgrade: false
+                    date: '1970-01-01'
+                    all:
+                      - product: premiere
+                        productName: Premiere (60 days) - Buy
+                        duration: 60
+                        displayPrice: $1000.00
+                        price: '1000.00'
+                        rackPrice: '2000.00'
+                        currency: AUD
+                      - product: ebrochure
+                        productName: eBrochure - Buy
+                        displayPrice: $50.00
+                        price: '50.00'
+                        rackPrice: '100.00'
+                        currency: AUD
+                      - product: audience-maximiser
+                        productName: Audience Maximiser
+                        displayPrice: $250.00
+                        price: '250.00'
+                        rackPrice: '350.00'
+                        currency: AUD
+                    manual:
+                      - product: luxe
+                        productName: Luxe Unlimited - Buy
+                        displayPrice: '$2000.00'
+                        price: '2000.00'
+                        rackPrice: '2000.00'
+                        currency: AUD
+                        topUpPrice: '1000.00'
+                      - product: property-showcase
+                        productName: Property Showcase - Buy
+                        displayPrice: $100.00
+                        price: '100.00'
+                        rackPrice: '100.00'
+                        currency: AUD
+                    flex:
+                      exceptionDowngrade:
+                        - product: highlight
+                          productName: Highlight (30 days) - Buy
+                          duration: 30
+                          displayPrice: $400.00
+                          price: '400.00'
+                          rackPrice: '800.00'
+                          currency: AUD
+                          points: 1
+                        - product: feature
+                          productName: Feature (30 days) - Buy
+                          duration: 30
+                          displayPrice: $200.00
+                          price: '200.00'
+                          rackPrice: '450.00'
+                          currency: AUD
+                          points: 1
+                        - product: standard
+                          productName: Standard - Buy
+                          displayPrice: $30.00
+                          price: '30.00'
+                          rackPrice: '100.00'
+                          currency: AUD
+                          points: 1
+                      payOnSale:
+                        - product: premiere
+                          productName: Premiere (60 days) - Buy
+                          duration: 60
+                          displayPrice: '$0.00 up front, $2,400.00 when sold'
+                          price: '2400.00'
+                          rackPrice: '2000.00'
+                          currency: AUD
+                          points: 1
+                FeatElect:
+                  summary: Feature Elect
+                  value:
+                    _links:
+                      self:
+                        href: >-
+                          https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                    section: buy
+                    listingType: rural
+                    reupgrade: false
+                    date: '1970-01-01'
+                    elect:
+                      - product: feature
+                        productName: Feature (30 days) - Buy
+                        duration: 30
+                        displayPrice: $200.00
+                        price: '200.00'
+                        rackPrice: '450.00'
+                        currency: AUD
+                    manual:
+                      - product: premiere
+                        productName: Premiere (60 days) - Buy
+                        duration: 60
+                        displayPrice: $2000.00
+                        price: '2000.00'
+                        rackPrice: '2000.00'
+                        currency: AUD
+                      - product: highlight
+                        productName: Highlight (30 days) - Buy
+                        duration: 30
+                        displayPrice: $400.00
+                        price: '400.00'
+                        rackPrice: '800.00'
+                        currency: AUD
+                      - product: audience-maximiser
+                        productName: Audience Maximiser
+                        displayPrice: $250.00
+                        price: '250.00'
+                        rackPrice: '350.00'
+                        currency: AUD
+                      - product: property-showcase
+                        productName: Property Showcase - Buy
+                        displayPrice: $100.00
+                        price: '100.00'
+                        rackPrice: '100.00'
+                        currency: AUD
+                      - product: ebrochure
+                        productName: eBrochure - Buy
+                        displayPrice: $100.00
+                        price: '100.00'
+                        rackPrice: '100.00'
+                        currency: AUD
+                      - product: audience-maximiser
+                        productName: Audience Maximiser
+                        displayPrice: $350.00
+                        price: '350.00'
+                        rackPrice: '350.00'
+                        currency: AUD
+                    cappedProduct:
+                      - cap: 5
+                        period: monthly
+                        price:
+                          product: standard
+                          productName: Standard - Buy
+                          displayPrice: $120.00
+                          price: '120.00'
+                          rackPrice: '120.00'
+                          currency: AUD
+                StdContract:
+                  summary: Manual product upgrades
+                  value:
+                    _links:
+                      self:
+                        href: >-
+                          https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                    section: rent
+                    listingType: residential
+                    reupgrade: false
+                    date: '1970-01-01'
+                    manual:
+                      - product: premiere
+                        productName: Premiere (60 days) - Rent
+                        duration: 60
+                        displayPrice: $200.00
+                        price: '200.00'
+                        rackPrice: '200.00'
+                        currency: AUD
+                      - product: highlight
+                        productName: Highlight (30 days) - Rent
+                        duration: 30
+                        displayPrice: $80.00
+                        price: '80.00'
+                        rackPrice: '80.00'
+                        currency: AUD
+                      - product: feature
+                        productName: Feature (30 days) - Rent
+                        duration: 30
+                        displayPrice: $20.00
+                        price: '20.00'
+                        rackPrice: '20.00'
+                        currency: AUD
+                      - product: property-showcase
+                        productName: Property Showcase - Rent
+                        displayPrice: $10.00
+                        price: '10.00'
+                        rackPrice: '10.00'
+                        currency: AUD
+                      - product: ebrochure
+                        productName: eBrochure - Rent
+                        displayPrice: $10.00
+                        price: '10.00'
+                        rackPrice: '10.00'
+                        currency: AUD
+                    cappedProduct:
+                      - cap: 5
+                        period: monthly
+                        price:
+                          product: standard
+                          productName: Standard - Buy
+                          displayPrice: $120.00
+                          price: '120.00'
+                          rackPrice: '120.00'
+                          currency: AUD
+                Reupgrade:
+                  summary: Reupgrade after initial purchase
+                  value:
+                    _links:
+                      self:
+                        href: >-
+                          https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                    section: buy
+                    listingType: land
+                    reupgrade: true
+                    date: '1970-01-01'
+                    manual:
+                      - product: premiere
+                        productName: Premiere (60 days) - Buy
+                        duration: 60
+                        displayPrice: $500.00
+                        price: '500.00'
+                        rackPrice: '2000.00'
+                        currency: AUD
+                      - product: highlight
+                        productName: Highlight (30 days) - Buy
+                        duration: 30
+                        displayPrice: $200.00
+                        price: '200.00'
+                        rackPrice: '800.00'
+                        currency: AUD
+                      - product: feature
+                        productName: Feature (30 days) - Buy
+                        duration: 30
+                        displayPrice: $100.00
+                        price: '100.00'
+                        rackPrice: '450.00'
+                        currency: AUD
+                Uplift:
+                  summary: Uplifted product
+                  value:
+                    _links:
+                      self:
+                        href: >-
+                          https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                    section: rent
+                    listingType: residential
+                    reupgrade: false
+                    date: '1970-01-01'
+                    manual:
+                      - product: premiere
+                        productName: Premiere (60 days) - Rent
+                        duration: 60
+                        displayPrice: $2000.00
+                        price: '2000.00'
+                        rackPrice: '2000.00'
+                        currency: AUD
+                        upliftedFrom: highlight
+                      - product: highlight
+                        productName: Highlight (30 days) - Rent
+                        duration: 30
+                        displayPrice: $400.00
+                        price: '400.00'
+                        rackPrice: '800.00'
+                        currency: AUD
+                        upliftedFrom: feature
+                MultipleBilling:
+                  summary: Multiple billing
+                  value:
+                    _links:
+                      self:
+                        href: >-
+                          https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                    section: buy
+                    listingType: residential
+                    reupgrade: false
+                    date: '1970-01-01'
+                    manual:
+                      - product: feature
+                        productName: Feature All 90 Buy
+                        duration: 90
+                        displayPrice: $1470.00
+                        price: '1470.00'
+                        rackPrice: '1470.00'
+                        currency: AUD
+        '400':
+          description: >
+            This response indicates when the required parameters were missing or
+            if
+
+            the values in the parameters were invalid.
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/unknown-location
+                title: 'Unknown suburb, state and postcode combination'
+                detail: >
+                  The combination of suburb, state and postcode cannot be found.
+                  Please check Australia Post 
+
+                  (https://auspost.com.au/postcode) and Geoscience Australia
+                  (https://www.ga.gov.au/placename/)
+
+                  for a valid list of values.
+        '401':
+          description: >
+            This response indicate when the caller is not allowed to access the
+            content or API. 
+
+            Possible reasons for this could be authentication (missing or
+            expired login tokens).
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/unauthorised
+                title: Unauthorised access
+                detail: >
+                  The caller is not authorised to access the content for the
+                  specified agencyId. Also
+
+                  check that the authentication token has not expired,
+                  preventing access to data for
+
+                  this agencyId.
+        '403':
+          description: >
+            This response indicate when the caller is not allowed to access the
+            content or API. 
+
+            Possible reasons for this could be authorisation (caller is not
+            allowed to access the prices for the agencyId).
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/forbidden
+                title: Forbidden
+                detail: |
+                  The caller can't access to the prices.
+        '404':
+          description: |
+            This response indicate when there are no available products to the 
+            customer for the specified query. 
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/notfound
+                title: Prices not found
+                detail: >
+                  The caller doesn't have available products for the specified
+                  query. Please check if the query parameter is correct.
+        '500':
+          description: |
+            This response indicate when there are some internal server errors. 
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/internal-server-rror
+                title: Internal Server Error
+                detail: |
+                  Sorry, your request could not be serviced at this time.
+
+  /prices/v1/commercial-properties:
+    get:
+      summary: Product prices and options when listing properties on realcommercial.com.au
+      description: |
+        Customers listing on realcommercial.com.au can find out their purchase price options for listings in each channel,
+        at various listing tiers and durations. The returned price options include any default prices in customer's contract,
+        listing upgrade options that are bundled with the contact, and new prices for the upcoming financial year, if
+        they are available.
+      operationId: realcommercialPrices
+      security:
+        - PartnerPlatform: [ "pricing:products:read" ]
+      parameters:
+        - name: agency_id
+          description: |
+            This is the unique 6 letter agency code for an office with an active
+            subscription. Refer
+
+            to 'API X' for a list of agency codes that can be accessed by the
+            caller.
+          in: query
+          required: true
+          style: form
+          schema:
+            type: string
+            pattern: ^[A-Z]{6}$
+          example: FEXBNP
+        - name: suburb
+          description: >
+            The name of the suburb where the property is physically located, as
+            recognised by the 
+
+            appropriate state government. The suburb specified must be a
+            recognised suburb 
+
+            according to Geoscience Australia (https://www.ga.gov.au/placename/)
+          in: query
+          required: true
+          style: form
+          schema:
+            type: string
+          example: Sydney
+        - name: state
+          description: >-
+            This represents the state or territory where the listed property is
+            located. Available values "ACT", "NSW", "NT", "QLD", "SA", "TAS", "VIC", "WA".
+          in: query
+          required: true
+          style: form
+          schema:
+            type: string
+            enum:
+              - ACT
+              - NSW
+              - NT
+              - QLD
+              - SA
+              - TAS
+              - VIC
+              - WA
+          example: NSW
+        - name: postcode
+          description: >
+            This is the recognised postal code for the property. The postcode
+            specified must be
+
+            recognised by Australia Post (https://auspost.com.au/postcode)
+
+            officially
+          in: query
+          required: true
+          style: form
+          schema:
+            type: string
+            pattern: '^[0-9]{4}$'
+          example: '2000'
+      responses:
+        '200':
+          description: |
+            The list of products and prices available to the customer for a given location
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/realcommercial_products'
+        '400':
+          description: >
+            This response indicates when the required parameters were missing or
+            if
+
+            the values in the parameters were invalid.
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/commercial-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/unknown-location
+                title: 'Unknown suburb, state and postcode combination'
+                detail: >
+                  The combination of suburb, state and postcode cannot be found.
+                  Please check Australia Post 
+
+                  (https://auspost.com.au/postcode) and Geoscience Australia
+                  (https://www.ga.gov.au/placename/)
+
+                  for a valid list of values.
+        '401':
+          description: >
+            This response indicate when the caller is not allowed to access the
+            content or API. 
+
+            Possible reasons for this could be authentication (missing or
+            expired login tokens).
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/commercial-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/unauthorised
+                title: Unauthorised access
+                detail: >
+                  The caller is not authorised to access the content for the
+                  specified agencyId. Also
+
+                  check that the authentication token has not expired,
+                  preventing access to data for
+
+                  this agencyId.
+        '403':
+          description: >
+            This response indicate when the caller is not allowed to access the
+            content or API. 
+
+            Possible reasons for this could be authorisation (caller is not
+            allowed to access the prices for the agencyId).
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/commercial-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/forbidden
+                title: Forbidden
+                detail: |
+                  The caller can't access to the prices.
+        '404':
+          description: |
+            This response indicate when there are no available products to the 
+            customer for the specified query.
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/commercial-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/no-commercial-subscription
+                title: Prices not found
+                detail: There is no active commercial subscription
+        '500':
+          description: |
+            This response indicate when there are some internal server errors.
+          content:
+            application/hal+json:
+              schema:
+                $ref: '#/components/schemas/errors'
+              example:
+                _links:
+                  self:
+                    href: >-
+                      https://api.realestate.com.au/prices/v1/commercial-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+                type: >-
+                  https://partner.realestate.com.au/documentation/api/pricing/errors/internal-server-rror
+                title: Internal Server Error
+                detail: |
+                  Sorry, your request could not be serviced at this time.
+components:
+  schemas:
+    self:
+      type: object
+      required:
+        - href
+      properties:
+        href:
+          type: string
+          format: uri
+          example: >-
+            https://api.realestate.com.au/prices/v1/realestate-properties?agency_id=FEXBNP&suburb=Sydney&state=NSW&postcode=2000
+      description: >
+        This is a HAL+JSON [Link
+        object](https://tools.ietf.org/id/draft-kelly-json-hal-01.html#rfc.section.5)
+
+        with an **href** attribute describing the URL to this resource.
+    _links:
+      type: object
+      required:
+        - self
+      properties:
+        self:
+          $ref: '#/components/schemas/self'
+      description: >
+        As part of the HAL+JSON specification, the
+        [_links](https://tools.ietf.org/id/draft-kelly-json-hal-01.html#rfc.section.4.1)
+
+        attribute will contain a **self Link object** that is the canonical
+        representation of this resource.
+    product_price:
+      type: object
+      description: >
+        This is the price customer need to pay if they purchase the
+        product beyond cap.
+      required:
+        - product
+        - productName
+        - displayPrice
+        - price
+        - rackPrice
+        - currency
+      properties:
+        product:
+          type: string
+          enum:
+            - standard
+            - feature
+            - highlight
+            - premiere
+            - luxe
+            - ebrochure
+            - audience-maximiser
+            - property-showcase
+            - suburb-sponsorship
+            - rent-banners
+          description: >
+            This is the name of the product available for purchase. This product
+            may appear multiple
+
+            times, but the combination of the product and duration should be
+            unique (note: duration is optional).
+        productName:
+          type: string
+          description: >
+            This is the user friendly product name to display to the customer.
+            This name will remain consistent
+
+            with the latest names used for each of REA's products and services
+            and is recommended for use when
+
+            showing the customers the price of a product.
+        duration:
+          type: integer
+          description: >
+            This is the number of active days for the specified product. This
+            field is optional, and if it 
+
+            is not specified, it means this product is available for an
+            unlimited time for this price.
+        billingCyclePeriod:
+          type: integer
+          description: >
+            This is the days of the billing cycle period. This field is optional, and only existing when this is a multiple billing cycle product.
+        displayPrice:
+          type: string
+          description: >
+            This is a formatted string that represents the price to display to
+            the customer. This includes the
+
+            '$' symbol along with the dollar and cents amount for this product.
+            It is important to note that there
+
+            could be other text in this field and it is recommended that this
+            field be used to display the
+
+            price to the customer. Some potential examples of this field are
+            '$5.00', '$1,000.00' or 
+
+            '$0 upfront, $200 when sold'
+        price:
+          type: string
+          description: >
+            This is the price the customer will pay for this product. It
+            includes GST and any discounts
+
+            applicable for this customer. This value will include the dollars
+            and cents amount, but will 
+
+            not include the '$' symbol, eg. '5.00' or '10000.00'
+        rackPrice:
+          type: string
+          description: >
+            This is the standard price for this product, and should be displayed
+            to the customer to
+
+            help illustrate the discounting they receive.
+        currency:
+          type: string
+          enum:
+            - AUD
+          description: |
+            This is the units of price and rackPrice.
+        points:
+          type: integer
+          description: >
+            Some products require the customer to use their points to be able to
+            access a particular
+
+            product and price combination. This indicates how many points the
+            customer has to use to
+
+            be able to access this product.
+        upliftedFrom:
+          type: string
+          enum:
+            - feature
+            - highlight
+          description: >
+            This indicates that this is an uplifted product from a lower-priced
+            depth tier. 
+
+
+            For example, the current product may be 'premiere' but this field
+            will indicate that it was uplifted from a 'highlight' product.
+
+            The price field will reflect the price of the corresponding
+            'highlight' product.
+        topUpPrice:
+          type: string
+          description: >
+            The extra price for Luxe in addition to original Premiere+ price. This is only applicable to Luxe prices.
+    realcommercial_listing_tier:
+      type: string
+      enum:
+        - elite_plus
+        - elite
+        - enhanced
+        - basic
+    realcommercial_price_option:
+      type: object
+      required:
+        - listingTier
+        - isCurrentContract
+        - priceDetails
+      properties:
+        listingTier:
+          $ref: '#/components/schemas/realcommercial_listing_tier'
+        isCurrentContract:
+          type: boolean
+          example: true
+        priceDetails:
+          type: array
+          items:
+            type: object
+            required:
+              - duration
+              - price
+              - rackPrice
+              - isContracted
+            properties:
+              duration:
+                type: integer
+                example: 60
+              price:
+                type: number
+                format: double
+                example: 1000
+              rackPrice:
+                type: number
+                format: double
+                example: 2000
+              isContracted:
+                type: boolean
+                example: true
+    realestate_products:
+      type: object
+      required:
+        - _links
+        - section
+        - listingType
+        - reupgrade
+        - date
+        - manual
+      properties:
+        _links:
+          $ref: '#/components/schemas/_links'
+        section:
+          type: string
+          enum:
+            - buy
+            - rent
+            - sold
+          example: buy
+          description: >
+            As the **section** parameter is optional in the request, the
+            response will explicitly specify 
+
+            the **section** that relates to the prices returned.
+        listingType:
+          type: string
+          enum:
+            - residential
+            - land
+            - rural
+          example: residential
+          description: >
+            As the **listingType** parameter is optional in the request, the
+            response will explicitly specify
+
+            the **listingType** that relates to the prices returned.
+        reupgrade:
+          type: boolean
+          example: true
+          description: >
+            As the **reupgrade** parameter is optional in the request, the
+            response will explicitly specify 
+
+            whether the prices returned are for a subsequent upgrade (true), or
+            if it is for the initial 
+
+            upgrade of the product (false).
+        date:
+          type: string
+          format: date
+          example: '1970-01-01'
+          description: >
+            This is the date that the product prices are for. If the request did
+            not include a date, the
+
+            date returned will be today's date (Australian Eastern Daylight
+            Savings Time).
+        all:
+          type: array
+          items:
+            $ref: '#/components/schemas/product_price'
+          description: >
+            These products will be automatically purchased on the customer's
+            behalf when 
+
+            they list on realestate.com.au
+          example:
+            - product: premiere
+              productName: Premiere (60 days) - Buy
+              duration: 60
+              displayPrice: $1000.00
+              price: '1000.00'
+              rackPrice: '2000.00'
+              currency: AUD
+            - product: ebrochure
+              productName: eBrochure - Buy
+              displayPrice: $50.00
+              price: '50.00'
+              rackPrice: '100.00'
+              currency: AUD
+            - product: audience-maximiser
+              productName: Audience Maximiser
+              displayPrice: $250.00
+              price: '250.00'
+              rackPrice: '350.00'
+              currency: AUD
+        elect:
+          type: array
+          items:
+            $ref: '#/components/schemas/product_price'
+          description: >
+            These products are *not* automatically purchased, but customers can
+            choose to
+
+            purchase them at their discretion. However, they have a minimum
+            number that have 
+
+            been commited to over a specified period of time
+          example:
+            - product: feature
+              productName: Feature (30 days) - Buy
+              duration: 30
+              displayPrice: $200.00
+              price: '200.00'
+              rackPrice: '450.00'
+              currency: AUD
+        manual:
+          type: array
+          items:
+            $ref: '#/components/schemas/product_price'
+          description: >
+            These products can be manually purchased by the customer and are
+            not 
+
+            automatically purchased on their behalf.
+          example:
+            - product: property-showcase
+              productName: Property Showcase - Buy
+              displayPrice: $100.00
+              price: '100.00'
+              rackPrice: '100.00'
+              currency: AUD
+            - product: suburb-sponsorship
+              productName: Suburb Sponsorship
+              displayPrice: $869.00
+              price: '869.00'
+              rackPrice: '869.00'
+              currency: AUD
+        flex:
+          type: object
+          properties:
+            exceptionDowngrade:
+              type: array
+              items:
+                $ref: '#/components/schemas/product_price'
+              description: >
+                In a situation where a Premiere, Highlight or Feature product
+                will be automatically 
+
+                purchased on the customer's behalf, occassionally the customer
+                might want to
+
+                use a different product. In this situation, the customer can
+                choose to use their 
+
+                points to downgrade to a different product, so the points
+                required and price charged
+                 will be indicate here. 
+            payOnSale:
+              type: array
+              items:
+                $ref: '#/components/schemas/product_price'
+              description: >
+                In this instance, a customer can choose to delay payment for a
+                product until it
+
+                is sold. This is the price and points required to access these
+                products.
+          description: >
+            These products are available to customers to manually purchase, so
+            long as
+
+            they have the necessary points to access them. There is a **points**
+            attribute 
+
+            included for each product that indicates how many points will be
+            needed to 
+
+            access them.
+          example:
+            exceptionDowngrade:
+              - product: highlight
+                productName: Highlight (30 days) - Buy
+                duration: 30
+                displayPrice: $400.00
+                price: '400.00'
+                rackPrice: '800.00'
+                currency: AUD
+                points: 1
+              - product: feature
+                productName: Feature (30 days) - Buy
+                duration: 30
+                displayPrice: $200.00
+                price: '200.00'
+                rackPrice: '450.00'
+                currency: AUD
+                points: 1
+              - product: standard
+                productName: Standard - Buy
+                displayPrice: $30.00
+                price: '30.00'
+                rackPrice: '100.00'
+                currency: AUD
+                points: 1
+            payOnSale:
+              - product: premiere
+                productName: Premiere (60 days) - Buy
+                duration: 60
+                displayPrice: '$0.00 up front, $2,400.00 when sold'
+                price: '2400.00'
+                rackPrice: '2000.00'
+                currency: AUD
+                points: 1
+        cappedProduct:
+          type: array
+          items:
+            type: object
+            required:
+              - cap
+              - period
+              - price
+            properties:
+              cap:
+                type: integer
+                description: >
+                  This indicates that how many listings can have this product for
+                  the corresponding period.
+
+
+                  For example, if the value is 5, listing more than this number
+                  for the corresponding **period** will incur the **charge**
+                  specified.
+              period:
+                type: string
+                enum:
+                  - monthly
+                  - quarterly
+                description: >
+                  This indicates that the length of time that the cap applies for.
+
+
+                  For example, if the value is monthly, cap is 5 and product is
+                  standard, then customer can purchase 5 standard listings each
+                  month.
+              price:
+                $ref: '#/components/schemas/product_price'
+          description: >
+            For a given period, this indicates the maximum amount a customer can
+            list for a particular product before additional charges apply.
+
+            Once this number is exceeded, each additional listing with this
+            product will be charged during the specified period.
+          example:
+            - cap: 5
+              period: monthly
+              price:
+                product: standard
+                productName: Standard - Buy
+                displayPrice: $120.00
+                price: '120.00'
+                rackPrice: '120.00'
+                currency: AUD
+    realcommercial_products:
+      type: object
+      required:
+        - agencyName
+        - state
+        - suburb
+        - postcode
+        - subscription
+        - productPrice
+        - productOption
+      properties:
+        agencyName:
+          type: string
+        state:
+          type: string
+          enum:
+            - ACT
+            - NSW
+            - NT
+            - QLD
+            - SA
+            - TAS
+            - VIC
+            - WA
+        suburb:
+          type: string
+        postcode:
+          type: string
+        subscription:
+          type: string
+          enum:
+            - Diamond
+            - Flexi
+            - Access
+            - Standard
+        productPrice:
+          type: array
+          items:
+            type: object
+            required:
+              - section
+              - priceOptions
+              - newPrice
+            properties:
+              section:
+                type: string
+                enum:
+                  - sale
+                  - lease
+              priceOptions:
+                type: array
+                items:
+                  $ref: '#/components/schemas/realcommercial_price_option'
+                example:
+                  - listingTier: enhanced
+                    isCurrentContract: true
+                    priceDetails:
+                      - duration: 60
+                        price: 1000
+                        rackPrice: 2000
+                        isContracted: true
+                  - listingTier: elite
+                    isCurrentContract: false
+                    priceDetails:
+                      - duration: 365
+                        price: 1000
+                        rackPrice: 2000
+                        isContracted: false
+              newPrice:
+                type: object
+                nullable: true
+                required:
+                  - title
+                  - priceOptions
+                properties:
+                  title:
+                    type: string
+                  priceOptions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/realcommercial_price_option'
+                example:
+                  title: FY26 Pricing
+                  priceOptions:
+                    - listingTier: enhanced
+                      isCurrentContract: true
+                      priceDetails:
+                        - duration: 90
+                          price: 1200
+                          rackPrice: 1500
+                          isContracted: false
+                    - listingTier: elite
+                      isCurrentContract: false
+                      priceDetails:
+                        - duration: 180
+                          price: 2000
+                          rackPrice: 2500
+                          isContracted: true
+        productOption:
+          type: array
+          items:
+            type: object
+            required:
+              - listingTier
+              - listingPrice
+              - description
+            properties:
+              listingTier:
+                $ref: '#/components/schemas/realcommercial_listing_tier'
+              listingPrice:
+                type: string
+              description:
+                type: string
+          example:
+            - listingTier: enhanced
+              listingPrice: 10 per month
+              description: 30 day Enhanced upgrade. Any additional upgrades will be charged at rack rates shown in the above table.
+    errors:
+      description: >
+        This captures the errors from making API calls to Pricing API. As much
+        as possible,
+
+        the content follows the IETF RFC-7807 format
+        https://datatracker.ietf.org/doc/html/rfc7807
+      type: object
+      required:
+        - _links
+        - type
+        - title
+      properties:
+        _links:
+          $ref: '#/components/schemas/_links'
+        type:
+          type: string
+          format: uri
+          description: >
+            This is a string that uniquely describes the type of error, and
+            follows the 
+
+            [IETF RFC-7807
+            specification](https://datatracker.ietf.org/doc/html/rfc7807) on the
+
+            error
+            [type](https://datatracker.ietf.org/doc/html/rfc7807#section-3.1)
+            attribute.
+        title:
+          type: string
+          description: >
+            This is a string that provides a human readable error message, and
+            follows the 
+
+            [IETF RFC-7807
+            specification](https://datatracker.ietf.org/doc/html/rfc7807) on the
+
+            [title](https://datatracker.ietf.org/doc/html/rfc7807#section-3.1)
+            attribute.
+        detail:
+          type: string
+          description: >
+            This is a string that provides a *detailed* message of the problem,
+            and follows the 
+
+            [IETF RFC-7807
+            specification](https://datatracker.ietf.org/doc/html/rfc7807) on the
+
+            [detail](https://datatracker.ietf.org/doc/html/rfc7807#section-3.1)
+            attribute.
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            pricing:products:read: Read pricing product information

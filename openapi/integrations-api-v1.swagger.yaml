@@ -1,0 +1,273 @@
+openapi: '3.0.2'
+info:
+  title: Integrations API
+  description: |
+    The Integrations API allows you to retrieve information about delegations between API Consumers 
+    and Resource Owners. An Integration represents the authorization relationship and associated scopes 
+    granted to your application by a resource owner (such as an agency).
+    
+    This API uses HAL (Hypertext Application Language) for hypermedia links.
+  version: '1'
+servers:
+  - url: https://api.realestate.com.au
+    description: Production API
+security:
+  - PartnerPlatform:
+      - 'integrations:read'
+paths:
+  '/me/v1/integrations':
+    get:
+      tags:
+        - Integrations
+      summary: List all integrations
+      description: |
+        Retrieves a paginated list of all integrations for the authenticated API consumer.
+        Results can be filtered by the `since` parameter to only return integrations updated after a specific timestamp.
+        Pagination is cursor-based using the `nextPage` parameter.
+      operationId: listIntegrations
+      parameters:
+        - $ref: '#/components/parameters/SinceFilter'
+        - $ref: '#/components/parameters/NextPageIntegration'
+      responses:
+        '200':
+          description: Successfully retrieved integrations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Integrations'
+              examples:
+                integrationsExample:
+                  $ref: '#/components/examples/Integrations'
+        '400':
+          description: Bad Request
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '500':
+          description: Internal Server Error
+  
+  '/me/v1/integrations/{id}':
+    get:
+      tags:
+        - Integrations
+      summary: Get a specific integration
+      description: Retrieves detailed information about a specific integration by its ID
+      operationId: getIntegration
+      parameters:
+        - $ref: '#/components/parameters/IntegrationId'
+      responses:
+        '200':
+          description: Successfully retrieved the integration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Integration'
+              examples:
+                integrationExample:
+                  $ref: '#/components/examples/Integration'
+        '401':
+          description: Unauthorized
+        '403':
+          description: Forbidden
+        '404':
+          description: Integration not found
+        '500':
+          description: Internal Server Error
+
+components:
+  parameters:
+    IntegrationId:
+      name: "id"
+      in: "path"
+      required: true
+      description: "The ID of the Integration to retrieve"
+      schema:
+        type: "string"
+        format: "uuid"
+        examples:
+          - "123e4567-e89b-12d3-a456-426614174000"
+    
+    SinceFilter:
+      name: "since"
+      in: "query"
+      description: "Optional query parameter to filter integrations updated since the specified timestamp"
+      required: false
+      schema:
+        type: "string"
+        format: "date-time"
+        examples:
+          - "2024-10-02T02:30:30.554399Z"
+    
+    NextPageIntegration:
+      name: "nextPage"
+      in: "query"
+      description: "Optional query parameter to paginate the Integration search results"
+      required: false
+      schema:
+        type: "string"
+        examples:
+          - "eyJ0aW1lc3RhbXAiOiIyMDI0LTA0LTAyVDAwOjAwOjAwWiIsImlkIjoiYWJjMTIzIn0="
+
+  schemas:
+    Integration:
+      type: "object"
+      description: "An Integration representing a delegation between an API Consumer and a Resource Owner"
+      properties:
+        integrationId:
+          type: "string"
+          format: "uuid"
+          description: "The unique identifier for the integration"
+          examples:
+            - "123e4567-e89b-12d3-a456-426614174000"
+        updatedAt:
+          type: "string"
+          format: "date-time"
+          description: "ISO 8601 formatted date string. The time the Integration was last updated."
+          examples:
+            - "2024-10-03T05:30:30.554399Z"
+        ownerId:
+          type: "string"
+          description: "A human-readable identifier for the resource owner"
+          examples:
+            - "XYZABC"
+        ownerType:
+          type: "string"
+          description: "The type of the resource owner"
+          examples:
+            - "agency"
+        scopes:
+          type: "array"
+          items:
+            type: "string"
+          description: "List of scopes granted to this integration"
+          examples:
+            - ["listing:listings:write", "lead:enquiries:read"]
+        _links:
+          $ref: "#/components/schemas/IntegrationLinks"
+      required:
+        - "integrationId"
+        - "updatedAt"
+        - "ownerId"
+        - "ownerType"
+        - "scopes"
+        - "_links"
+    
+    IntegrationLinks:
+      type: "object"
+      description: "HAL links for an Integration"
+      properties:
+        self:
+          $ref: "#/components/schemas/HalLink"
+      required:
+        - "self"
+    
+    Integrations:
+      type: "object"
+      description: "A HAL response containing a list of Integrations"
+      properties:
+        _links:
+          $ref: "#/components/schemas/IntegrationsLinks"
+        _embedded:
+          $ref: "#/components/schemas/IntegrationsEmbedded"
+      required:
+        - "_links"
+        - "_embedded"
+    
+    IntegrationsLinks:
+      type: "object"
+      description: "HAL links for the Integrations index response"
+      properties:
+        self:
+          $ref: "#/components/schemas/HalLink"
+        next:
+          $ref: "#/components/schemas/HalNextLink"
+      required:
+        - "self"
+    
+    IntegrationsEmbedded:
+      type: "object"
+      description: "Embedded resources in the Integrations response"
+      properties:
+        integrations:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Integration"
+      required:
+        - "integrations"
+    
+    HalLink:
+      type: "object"
+      description: "A HAL link"
+      properties:
+        href:
+          type: "string"
+          format: "uri"
+          description: "The URL of the linked resource"
+          examples:
+            - "https://api.realestate.com.au/me/v1/integrations/123e4567-e89b-12d3-a456-426614174000"
+      required:
+        - "href"
+    
+    HalNextLink:
+      type: "object"
+      description: "A HAL link for pagination"
+      properties:
+        href:
+          type: "string"
+          format: "uri"
+          nullable: true
+          description: "The URL to retrieve the next page of results"
+          examples:
+            - "https://api.realestate.com.au/me/v1/integrations?nextPage=eyJ0aW1lc3RhbXAiOiIyMDI0LTA0LTAyVDAwOjAwOjAwWiIsImlkIjoiYWJjMTIzIn0="
+        cursor:
+          type: "string"
+          nullable: true
+          description: "The cursor value to use for the next page"
+          examples:
+            - "eyJ0aW1lc3RhbXAiOiIyMDI0LTA0LTAyVDAwOjAwOjAwWiIsImlkIjoiYWJjMTIzIn0="
+
+  examples:
+    Integration:
+      description: "An example Integration"
+      value:
+        integrationId: "123e4567-e89b-12d3-a456-426614174000"
+        updatedAt: "2024-10-03T05:30:30.554399Z"
+        ownerId: "XYZABC"
+        ownerType: "agency"
+        scopes:
+          - "listing:listings:write"
+          - "lead:enquiries:read"
+        _links:
+          self:
+            href: "https://api.realestate.com.au/me/v1/integrations/123e4567-e89b-12d3-a456-426614174000"
+    
+    Integrations:
+      description: "An example Integrations response"
+      value:
+        _links:
+          self:
+            href: "https://api.realestate.com.au/me/v1/integrations"
+          next:
+            href: "https://api.realestate.com.au/me/v1/integrations?nextPage=eyJ0aW1lc3RhbXAiOiIyMDI0LTA0LTAyVDAwOjAwOjAwWiIsImlkIjoiYWJjMTIzIn0="
+            cursor: "eyJ0aW1lc3RhbXAiOiIyMDI0LTA0LTAyVDAwOjAwOjAwWiIsImlkIjoiYWJjMTIzIn0="
+        _embedded:
+          integrations:
+            - integrationId: "123e4567-e89b-12d3-a456-426614174000"
+              updatedAt: "2024-10-03T05:30:30.554399Z"
+              ownerId: "XYZABC"
+              ownerType: "agency"
+              scopes:
+                - "listing:listings:write"
+                - "lead:enquiries:read"
+              _links:
+                self:
+                  href: "https://api.realestate.com.au/me/v1/integrations/123e4567-e89b-12d3-a456-426614174000"
+
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token

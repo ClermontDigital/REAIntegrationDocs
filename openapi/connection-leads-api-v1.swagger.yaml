@@ -1,0 +1,297 @@
+openapi: 3.1.1
+info:
+  version: 1.0.3
+  title: Connection Leads API
+  description: Poll connection leads of the applications approved by agents, and
+    poll the affiliated agencies for the provider.
+servers:
+  - url: https://api.realestate.com.au/applications/v1/rental
+security:
+  - PartnerPlatform:
+      - rent:connection-leads:read
+paths:
+  /connection-leads:
+    get:
+      tags:
+        - Connection Leads API
+      summary: Poll connection leads of the applications approved by agents
+      description: >
+        The `/connection-leads` endpoint returns a collection of connection
+        leads against the applications which belong to the agencies that
+        authorized the partner. And the applications were approved after the
+        specific time. The response includes the details of the application,
+        tenant, property, agency and agent. The number of the leads will be up
+        to 25 per page.
+
+
+        **Support the following query parameters:**
+          - happenedSince
+      operationId: getConnectionLeadsUsingGet
+      parameters:
+        - schema:
+            type: string
+            format: date-time
+          name: happenedSince
+          in: query
+          description: The endpoint will return the connection leads against applications
+            approved since `happenedSince` (exclusive). This parameter should be
+            formatted as ISO-8601 datetime, i.e. `2020-08-27T22:47:01.604Z`.
+            When using Postman, curl, or a web application, it must use correct
+            URL encoding.
+          required: true
+      responses:
+        "200":
+          description: A set of connection leads where each one contains application,
+            tenant, property, agency and agent.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/ConnectionLeads"
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: The authentication token in the request is invalid.
+      security:
+        - PartnerPlatform:
+            - rent:connection-leads:read
+  /connection-leads/agencies:
+    get:
+      tags:
+        - Connection Leads API
+      summary: Poll the affiliated agencies for the provider.
+      description: >
+        The `/connection-leads/agencies` endpoint returns a collection of
+        affiliated agencies for the provider after the specific time, the
+        response include agencyId, agencyName, providerName, and updatedAt. The
+        number of the affiliated agencies will be up to 25 per page.
+
+
+        **Support the following query parameters:**
+          - happenedSince
+      operationId: getConnectionLeadsAffiliatedAgenciesUsingGet
+      parameters:
+        - schema:
+            type: string
+            format: date-time
+          name: happenedSince
+          in: query
+          description: The endpoint will return a collection of affiliated agencies for
+            the provider since `happenedSince` (exclusive). This parameter
+            should be formatted as ISO-8601 datetime, i.e.
+            `2020-08-27T22:47:01.604Z`. When using Postman, curl, or a web
+            application, it must use correct URL encoding.
+          required: true
+      responses:
+        "200":
+          description: A set of affiliated agencies where each one contains agencyId,
+            agencyName, providerName, and updatedAt.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/AffiliatedAgencies"
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: The authentication token in the request is invalid.
+      security:
+        - PartnerPlatform:
+            - rent:connection-leads:read
+
+components:
+  schemas:
+    ConnectionLeads:
+      type: object
+      properties:
+        _embedded:
+          $ref: "#/components/schemas/ConnectionLeadsEmbedded"
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+      title: ConnectionLeads
+    ConnectionLeadsEmbedded:
+      type: object
+      properties:
+        connectionLeads:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectionLead"
+    ConnectionLead:
+      type: object
+      properties:
+        application:
+          $ref: "#/components/schemas/Application"
+        tenant:
+          $ref: "#/components/schemas/Tenant"
+        property:
+          $ref: "#/components/schemas/Property"
+        agency:
+          $ref: "#/components/schemas/Agency"
+        agents:
+          type: array
+          items:
+            $ref: "#/components/schemas/Agent"
+        connectionProviderName:
+          type: string
+        utilityConnectionsAllowed:
+          type: array
+          description: The types of the utility connection allowed to be connecting.
+          items:
+            type: string
+    AffiliatedAgencies:
+      type: object
+      properties:
+        _embedded:
+          $ref: "#/components/schemas/AffiliatedAgenciesEmbedded"
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+      title: AffiliatedAgency
+    AffiliatedAgenciesEmbedded:
+      type: object
+      properties:
+        affiliatedAgencies:
+          type: array
+          items:
+            $ref: "#/components/schemas/AffiliatedAgency"
+    AffiliatedAgency:
+      type: object
+      properties:
+        agencyId:
+          type: string
+          description: The unique id for the agency in REA system.
+        agencyName:
+          type: string
+          description: The name of the agency.
+        providerName:
+          type: string
+          description: The name of the provider this agency has selected.
+        updatedAt:
+          type: string
+          format: date-time
+          description: The datetime when provider has been selected with ISO-8601 DateTime
+            format.
+    Application:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier representing a specific application.
+        approvedAt:
+          type: string
+          format: date-time
+          description: The application approved datetime with ISO-8601 DateTime format.
+    Tenant:
+      type: object
+      properties:
+        firstName:
+          type: string
+        lastName:
+          type: string
+        email:
+          type: string
+          description: Can be null if the applicant use Apple social sign-in.
+        mobilePhoneNumber:
+          type: string
+        birthDate:
+          type: string
+          format: date
+          description: The tenant's birth date
+        identityDocument:
+          type: object
+          properties:
+            documentType:
+              type: string
+              enum:
+                - DRIVER_LICENCE
+                - PASSPORT
+            passportCountryCode:
+              type: string
+            passportNumber:
+              type: string
+            passportExpiryDate:
+              type: string
+              format: date
+            licenceNumber:
+              type: string
+            licenceState:
+              type: string
+            licenceExpiryDate:
+              type: string
+              format: date
+    Property:
+      type: object
+      properties:
+        street:
+          type: string
+        suburb:
+          type: string
+        state:
+          type: string
+        postCode:
+          type: string
+        moveInDate:
+          type: string
+          format: date
+          description: The date when tenant moves in
+    Agency:
+      type: object
+      properties:
+        reaId:
+          type: string
+        name:
+          type: string
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          description: Hyperlink to a Connection Leads API resource
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+        transactionId:
+          type: string
+          format: uuid
+        details:
+          type: array
+          items:
+            properties:
+              error:
+                type: string
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            rent:connection-leads:read: Fetch connection leads

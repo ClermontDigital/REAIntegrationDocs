@@ -1,0 +1,433 @@
+openapi: "3.0.3"
+info:
+  title: Partner Platform Webhook Subscription API
+  description: This API allows partners to create and manage webhook subscriptions to receive real-time notifications about events from Partner Platform.
+  version: "1.0"
+servers:
+  - url: https://api.realestate.com.au
+    description: Production API
+security:
+  - PartnerPlatform:
+      - 'webhooks:subscriptions:write'
+      - 'webhooks:subscriptions:read'
+components:
+  parameters:
+    subscriptionId:
+      name: subscriptionId
+      in: path
+      required: true
+      description: Subscription's Id
+      schema:
+        type: string
+        example: 29a5f7f2-f782-4679-b97d-78529c567867
+    attemptId:
+      name: attemptId
+      in: query
+      required: true
+      description: Delivery attemptId
+      schema:
+        type: string
+        example: 789ee1ca-6957-4abc-8a57-4361651c0122
+  schemas:
+    SubscriptionRequest:
+      type: object
+      description: A webhook's subscription
+      required:
+        - eventType
+        - eventCategory
+        - webhookUrl
+      properties:
+        eventType:
+          type: string
+          example: UploadCompleted
+          enum:
+            - UploadCompleted
+            - IntegrationCreated
+            - IntegrationUpdated
+            - IntegrationDeleted
+            - EnquiryCreated
+        eventCategory:
+          type: string
+          example: listing
+          enum:
+            - listing
+            - integration
+            - lead
+        ownerType:
+          type: string
+          example: agency
+          enum:
+            - agency
+        ownerId:
+          type: string
+          example: ABCDEF
+        webhookUrl:
+          type: string
+          example: https://mywebhook.com
+    SubscriptionResponse:
+      type: object
+      description: A webhook's subscription response
+      properties:
+        subscriptionId:
+          type: string
+          example: 29a5f7f2-f782-4679-b97d-78529c567867
+        eventType:
+          type: string
+          example: UploadCompleted
+          enum:
+            - UploadCompleted
+            - IntegrationCreated
+            - IntegrationUpdated
+            - IntegrationDeleted
+            - EnquiryCreated
+        eventCategory:
+          type: string
+          example: listing
+          enum:
+            - listing
+            - integration
+            - lead
+        ownerType:
+          type: string
+          example: agency
+        ownerId:
+          type: string
+          example: ABCDEF
+        webhookUrl:
+          type: string
+          example: https://mywebhook.com
+        status:
+          type: string
+          example: PENDING
+          enum:
+            - PENDING
+            - VALIDATED
+            - FAILED
+            - DISABLED
+    DeliveryResponse:
+      type: object
+      description: A webhook's delivery response
+      properties:
+        deliveries:
+          type: array
+          items:
+            properties:
+              attemptId:
+                type: string
+                example: 6d33d273-62cd-4e60-b27f-dcb9a2d9f48f
+              deliveryId:
+                type: string
+                example: ffd63f03-d393-48bb-b6e6-9267ea0d6e8b
+              statusCode:
+                type: integer
+                example: 200
+              outcome:
+                type: string
+                example: Ok
+              createdAt:
+                type: string
+                example: '2021-09-09T05:37:25.951303Z'
+        _links:
+          $ref: '#/components/schemas/Links'
+    404Error:
+      type: object
+      properties:
+        status:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        meta:
+          type: object
+          properties:
+            transactionId:
+              type: string
+            subscriptionId:
+              type: string
+      example:
+        {
+          "status": "404",
+          "title": "Not found",
+          "detail": "Subscription not found 6096a9ea-a0f6-4997-81d7-9c6c038abb8a",
+          "meta": {
+            "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+          }
+        }
+    400Error:
+      type: object
+      properties:
+        status:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        meta:
+          type: object
+          properties:
+            transactionId:
+              type: string
+            subscriptionId:
+              type: string
+      example:
+        {
+          "status": "400",
+          "title": "Bad Request",
+          "detail": "INVALID_EVENT_TYPE",
+          "meta": {
+            "transactionId": "93ec3fc0-ea59-4b86-a2a0-b158dcfb8f0a"
+          }
+        }
+    SubscriptionId:
+      type: string
+      format: string
+      example: 29a5f7f2-f782-4679-b97d-78529c567867
+    SubscriptionsResponse:
+      type: object
+      properties:
+        subscriptions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SubscriptionResponse'
+        _links:
+          $ref: '#/components/schemas/Links'
+    Links:
+      type: object
+      properties:
+        next:
+          $ref: '#/components/schemas/Link'
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          description: Hyperlink to a Webhooks API resource
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description:
+        OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            webhooks:subscriptions:write: Webhook listings write
+            webhooks:subscriptions:read: Webhook listings read
+paths:
+  /webhooks/v1/signing:
+    description: Webhook request signing keys
+    get:
+      operationId: getSigningKeys
+      summary: Get public keys used to verify incoming webhook requests
+      responses:
+        "200":
+          description: Webhook request signing keys
+          content:
+            application/json: {} # FIXME: change back to application/jwk-set+json when we stop http4s returning 406
+  /webhooks/v1/subscriptions:
+    description: Webhook Subscriptions
+    post:
+      operationId: createSubscription
+      summary: Create a new subscription
+      requestBody:
+        description: Subscription's information
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubscriptionRequest"
+      responses:
+        "202":
+          description: |
+            A new webhook's subscription is accepted
+            in response to your request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "400":
+          description: Malformed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400Error'
+        "401":
+          description: |
+            The application or owner is not authorized to get the notification for
+            the event. This can happen if the Provider is not authorised to act on
+            behalf of the Agency, or required scopes for the event type are missing.
+        "403":
+          description: Forbidden
+        "409":
+          description: |
+            When the same subscription (same ownerId, ownertype, eventCategory and eventType) already exists.
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests permitted.
+        "500":
+          description: Internal Server Error
+      security:
+        - PartnerPlatform:
+            - 'webhooks:subscriptions:write'
+    get:
+      operationId: getSubscriptions
+      parameters:
+        - in: query
+          name: page
+          description: This parameter is used for pagination. Retrieving a list of subscriptions without the page parameter will return the first page of subscriptions from oldest to newest, and a link to the next page of results.
+          required: false
+          schema:
+            $ref: '#/components/schemas/SubscriptionId'
+      summary: Get webhook subscriptions
+      responses:
+        "200":
+          description: Webhook Subscriptions by partners or empty array for no subscriptions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionsResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404Error'
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests permitted.
+        "500":
+          description: Internal Server Error
+      security:
+        - PartnerPlatform:
+            - 'webhooks:subscriptions:read'
+  /webhooks/v1/subscriptions/{subscriptionId}:
+    description: A Webhook's subscription
+    get:
+      operationId: getSubscription
+      summary: Get a webhook's subscription
+      parameters:
+        - $ref: "#/components/parameters/subscriptionId"
+      responses:
+        "200":
+          description: Subscription matching subscriptionId
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SubscriptionResponse"
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404Error'
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests permitted.
+        "500":
+          description: Internal Server Error
+      security:
+        - PartnerPlatform:
+            - 'webhooks:subscriptions:read'
+    delete:
+      operationId: deleteSubscription
+      summary: Delete a webhook's subscription
+      parameters:
+        - $ref: "#/components/parameters/subscriptionId"
+      responses:
+        "204":
+          description: Delete complete no further action required
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404Error'
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests permitted.
+        "500":
+          description: Internal Server Error
+      security:
+        - PartnerPlatform:
+            - 'webhooks:subscriptions:write'
+  /webhooks/v1/subscriptions/{subscriptionId}/validate:
+    description: Validate a subscription
+    patch:
+      operationId: validateSubscription
+      summary: Validate a Failed or Disabled subscription
+      parameters:
+        - $ref: "#/components/parameters/subscriptionId"
+      responses:
+        "202":
+          description: Validation has commenced
+        "400":
+          description: Malformed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400Error'
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404Error'
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests permitted.
+        "500":
+          description: Internal Server Error
+  /webhooks/v1/subscriptions/{subscriptionId}/delivery:
+    description: Get delivery attempted logs
+    get:
+      operationId: getDeliveryAttempts
+      summary: Get delivery attempted logs
+      parameters:
+        - in: query
+          name: page
+          description: This parameter is used for pagination. Retrieving a list of delivery attempts without the page parameter will return the first page of delivery attempts from newest to oldest, and a link to the next page of results.
+          required: false
+          schema:
+            $ref: '#/components/schemas/SubscriptionId'
+        - $ref: "#/components/parameters/subscriptionId"
+      responses:
+        "200":
+          description: List of delivery attempted logs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeliveryResponse"
+        "400":
+          description: Malformed request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/400Error'
+        "401":
+          description: Unauthorized
+        "403":
+          description: Forbidden
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/404Error'
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests permitted.
+        "500":
+          description: Internal Server Error
+      security:
+        - PartnerPlatform:
+            - 'webhooks:subscriptions:write'

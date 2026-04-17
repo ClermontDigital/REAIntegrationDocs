@@ -1,0 +1,433 @@
+openapi: 3.1.1
+info:
+  title: Campaign API
+  description: Retrieve project performance reports for property advertising campaigns
+  version: 1.2.9
+servers:
+  - url: https://api.realestate.com.au/campaign/v2
+security:
+  - PartnerPlatform:
+      - campaign:project-performance:read
+paths:
+  /project-performance:
+    get:
+      summary: Get multiple project performance reports by agency ID
+      description: >
+        The /project-performance endpoint returns a collection of project
+        performance reports
+
+        for project profile advertising campaigns belonging to an agent. The
+        response includes reports for projects that match
+
+        the supplied query parameters. Each project performance report includes
+        details about the
+
+        project, as well as metrics for the report period:
+
+        * totalProjectPerformance (portal metrics for the whole project profile:
+        projectPagePerformance + totalProjectListingsPerformance)
+
+
+        Each portal metrics object contains metrics at three different
+        aggregation levels:
+
+        * all (totals for the whole reporting period)
+
+        * daily (totals for calendar dates up to a maximum of 90 days history)
+
+
+        Supports the following query parameters:
+
+        * agency_id
+      parameters:
+        - schema:
+            type: string
+          name: agency_id
+          in: query
+          description: Unique identifier representing the project agency.
+          required: true
+      tags:
+        - Project Performance
+      responses:
+        "200":
+          description: A set of project performance reports for the supplied query.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/ProjectPerformanceItemsForAgency"
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "401":
+          description: The request requires a valid authentication token
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "403":
+          description: Access to the requested resource is forbidden
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "404":
+          description: No project-performance resources were found for the requested
+            parameters
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        default:
+          description: Unexpected error
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+      security:
+        - PartnerPlatform:
+            - campaign:project-performance:read
+  /project-performance/{project_profile_id}:
+    get:
+      summary: Get single project performance report by project ID
+      description: >
+        The /project-performance/:project_profile_id endpoint returns a single
+        project performance
+
+        report for a project profile advertising campaign. The response is a
+        report for the project that
+
+        matches the supplied project ID. Each project performance report
+        includes details about the
+
+        project, as well as metrics for the report period:
+
+        * totalProjectPerformance (portal metrics for the whole project profile:
+        projectPagePerformance + totalProjectListingsPerformance)
+
+
+        Each portal metrics object contains metrics at three different
+        aggregation levels:
+
+        * all (totals for the whole reporting period)
+
+        * daily (totals for calendar dates up to a maximum of 90 days history)
+      parameters:
+        - schema:
+            type: string
+          name: project_profile_id
+          in: path
+          description: Unique identifier representing a specific project
+          required: true
+        - schema:
+            type: string
+          name: start_date
+          in: query
+          description: Start date greater than or equal to a given date (iso date)
+          examples:
+            default:
+              value: 2020-02-10
+        - schema:
+            type: string
+          name: end_date
+          in: query
+          description: End date less than or equal to a given date (iso date)
+          examples:
+            default:
+              value: 2020-02-10
+      tags:
+        - Project Performance
+      responses:
+        "200":
+          description: A project performance report for the supplied project ID.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/ProjectPerformance"
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "401":
+          description: The request requires a valid authentication token
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "403":
+          description: Access to the requested resource is forbidden
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        default:
+          description: Unexpected error
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+      security:
+        - PartnerPlatform:
+            - campaign:project-performance:read
+components:
+  schemas:
+    ProjectPerformanceItems:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ProjectPerformance"
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            prev:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+    ProjectPerformanceItemsForAgency:
+      allOf:
+        - $ref: "#/components/schemas/ProjectPerformanceItems"
+        - properties:
+            _embedded:
+              type: object
+              properties:
+                items:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/ProjectPerformanceForAgency"
+    ProjectPerformance:
+      type: object
+      properties:
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+        id:
+          type: string
+          description: Unique identifier representing a specific project
+            (project_profile_id).
+        listingType:
+          type: string
+          description: Type of listing.
+        agencyId:
+          type: string
+          description: Unique identifier representing the project agency.
+        listedDate:
+          type: string
+          description: Listed date of listing.
+        lastModifiedAt:
+          type: string
+          format: dateTime
+          description: Date/time that the project performance report was last modified.
+        pageView:
+          type: number
+          description: Count of when a user has viewed full page on site and includes
+            Project Profile child listings views.
+        searchResultsPageImpression:
+          type: number
+          description: The number of times a project profile has been displayed on site.
+        spend:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        phoneEngagement:
+          $ref: "#/components/schemas/PhoneEngagement"
+          description: Metric of actions by consumers which show a high level of interest
+            or intention for a property without necessarily directly contacting
+            someone.
+        emailLeads:
+          $ref: "#/components/schemas/EmailLeads"
+          description: Email leads is the sum of document downloads and email enquiries
+            that occurred for the date range selected.
+        phoneLeads:
+          $ref: "#/components/schemas/PhoneLeads"
+          description: Phone leads refers to our tracked phone calls and SMS. It is only
+            available to those with this product turned on.
+        costPerLead:
+          $ref: "#/components/schemas/CostPerLead"
+          description: The amount paid for each lead as the result of campaign activity
+            and value.
+        viewStatementOfInformation:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        listingSaved:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        sendToFriend:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        savedInspectionTime:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        threeDTourView:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        floorplanView:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        videoView:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        expandMap:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        getDirections:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        emailDirections:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        performance:
+          type: array
+          description: Individual metrics of total project performance at daily level.
+          items:
+            $ref: "#/components/schemas/Performance"
+    ProjectPerformanceForAgency:
+      allOf:
+        - $ref: "#/components/schemas/ProjectPerformance"
+        - properties:
+            lastActivityDate:
+              type: string
+              description: a measure of how recently campaign activity occurred for a given
+                project
+    PhoneEngagement:
+      type: object
+      properties:
+        revealedAgentPhoneNumber:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        clickToCall:
+          type: number
+          description: Click to call is when someone on a mobile device or app taps the
+            "call" button to display the phone number; which they can then tap
+            to call.
+    EmailLeads:
+      type: object
+      properties:
+        documentDownload:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        emailEnquiry:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+    PhoneLeads:
+      type: object
+      properties:
+        sms:
+          type: number
+          description: SMS refers to the tracked SMS through our Phone Leads product.
+        phoneCall:
+          type: number
+          description: Phone calls refers to the tracked phone calls through our Phone
+            Leads product.
+    CostPerLead:
+      type: object
+      properties:
+        leadsAndEngagements:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        emailLeads:
+          type: number
+          description: Email leads is the sum of document downloads and email enquiries
+            that occurred for the date range selected.
+        phoneEngagement:
+          type: number
+          description: Metric of actions by consumers which show a high level of interest
+            or intention for a property without necessarily directly contacting
+            someone.
+        phoneLeads:
+          type: number
+          description: Phone leads refers to our tracked phone calls and SMS. It is only
+            available to those with this product turned on.
+        emailAndPhoneLeads:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+    Performance:
+      type: object
+      properties:
+        pageView:
+          type: number
+          description: Count of when a user has viewed full page on site and includes
+            Project Profile child listings views.
+        emailLeads:
+          type: number
+          description: Email leads is the sum of document downloads and email enquiries
+            that occurred for the date range selected.
+        phoneEngagement:
+          type: number
+          description: Metric of actions by consumers which show a high level of interest
+            or intention for a property without necessarily directly contacting
+            someone.
+        phoneLeads:
+          type: number
+          description: Phone leads refers to our tracked phone calls and SMS. It is only
+            available to those with this product turned on.
+        spend:
+          type: number
+          description: Individual metric of total project performance aggregated total
+            value.
+        day:
+          type: string
+          description: Reporting day.
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          description: Hyperlink to a Campaign API resource
+    Errors:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        meta:
+          type: object
+          properties:
+            transactionId:
+              type: string
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            campaign:project-performance:read: Read project-performance records

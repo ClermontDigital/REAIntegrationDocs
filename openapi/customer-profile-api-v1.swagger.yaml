@@ -1,0 +1,1231 @@
+openapi: 3.1.0
+info:
+  title: Partner Profile API
+  version: 0.0.1
+  description: >-
+    Partner Profile API presents an access point for Agency CRMs to publish
+    agent profile data to REA. Data written to PPAPI is forwarded onto other
+    systems within the wider ecosystem, and is not stored locally.
+paths:
+  /diagnostic/heartbeat:
+    get:
+      tags:
+        - diagnostic
+      operationId: diagnostic.getHeartbeat
+      parameters: []
+      security: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: string
+                enum:
+                  - Service alive
+        "400":
+          description: The request did not match the expected schema
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HttpApiDecodeError"
+  /v1/individual-customers:
+    post:
+      tags:
+        - customerV1
+      operationId: customerV1.postIndividualCustomerV1
+      parameters: []
+      security: []
+      responses:
+        "200":
+          description: a Universally Unique Identifier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UUID"
+        "400":
+          description: The request did not match the expected schema
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/HttpApiDecodeError"
+                  - $ref: "#/components/schemas/Rfc7807ApiError.DecodeError"
+                  - $ref: "#/components/schemas/BadRequest"
+        "500":
+          description: InternalServerError
+      requestBody:
+        content:
+          application/json:
+            example:
+              firstName: Jane
+              lastName: Smith
+              displayProfile: true
+              aboutMe: Jane is a senior sales agent with 10 years experience in Melbourne inner suburbs.
+              workingRelationships:
+                - agencyId: ABCDEF
+                  workplaceEmail: jane.smith@example-agency.com.au
+                  contactEmail: jane@example-agency.com.au
+                  contactPhone: "+61412345678"
+                  roleType: Sales
+                  jobTitle: Senior Sales Agent
+                  primaryOffice: true
+              industryStartYear: 2016
+              professionalWebsite: https://www.example-agency.com.au/jane-smith
+              socials:
+                - https://www.linkedin.com/in/janesmith
+              profilePhoto: https://example.com/images/primary-photo.jpg
+              secondaryProfilePhoto: https://example.com/images/secondary-photo.jpg
+              coverPhoto: https://example.com/images/cover-photo.jpg
+              awards:
+                - name: Top Sales Agent
+                  year: 2024
+                  agencyId: ABCDEF
+            schema:
+              type: object
+              required:
+                - firstName
+                - displayProfile
+                - aboutMe
+                - workingRelationships
+                - lastName
+              properties:
+                firstName:
+                  $ref: "#/components/schemas/NonEmptyString"
+                displayProfile:
+                  type: boolean
+                aboutMe:
+                  $ref: "#/components/schemas/NonEmptyString"
+                workingRelationships:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required:
+                      - agencyId
+                      - workplaceEmail
+                      - contactEmail
+                      - contactPhone
+                      - roleType
+                      - jobTitle
+                    properties:
+                      agencyId:
+                        type: string
+                        description: a string matching the pattern ^[A-Z]{6}$
+                        pattern: ^[A-Z]{6}$
+                      workplaceEmail:
+                        type: string
+                        description: >-
+                          a string matching the pattern
+                          ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                        pattern: >-
+                          ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                      contactEmail:
+                        type: string
+                        description: >-
+                          a string matching the pattern
+                          ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                        pattern: >-
+                          ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                      contactPhone:
+                        type: string
+                        description: a string matching the pattern ^\+614\d{8}$
+                        pattern: ^\+614\d{8}$
+                      roleType:
+                        type: string
+                        enum:
+                          - Principal
+                          - Sales
+                          - PropertyManagement
+                          - Administration
+                      jobTitle:
+                        $ref: "#/components/schemas/NonEmptyString"
+                      primaryOffice:
+                        type: boolean
+                        description: >-
+                          Indicates if this is the primary office. If set to
+                          true, any existing primary working relationship will
+                          be auto-demoted.
+                    additionalProperties: false
+                awards:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - year
+                      - agencyId
+                    properties:
+                      name:
+                        $ref: "#/components/schemas/NonEmptyString"
+                      year:
+                        $ref: "#/components/schemas/Int"
+                        description: a number less than or equal to 2026
+                        title: lessThanOrEqualTo(2026)
+                        minimum: 1900
+                        maximum: 2026
+                      agencyId:
+                        type: string
+                        description: a string matching the pattern ^[A-Z]{6}$
+                        pattern: ^[A-Z]{6}$
+                    additionalProperties: false
+                industryStartYear:
+                  $ref: "#/components/schemas/Int"
+                  description: a number less than or equal to 2026
+                  title: lessThanOrEqualTo(2026)
+                  minimum: 1900
+                  maximum: 2026
+                professionalWebsite:
+                  anyOf:
+                    - type: string
+                    - anyOf:
+                        - type: string
+                          description: a string starting with "http://"
+                          title: startsWith("http://")
+                          pattern: ^http://
+                        - type: string
+                          description: a string starting with "https://"
+                          title: startsWith("https://")
+                          pattern: ^https://
+                  description: a string at most 1024 character(s) long
+                  title: maxLength(1024)
+                  minLength: 10
+                  maxLength: 1024
+                profilePhoto:
+                  anyOf:
+                    - type: string
+                    - anyOf:
+                        - type: string
+                          description: a string starting with "http://"
+                          title: startsWith("http://")
+                          pattern: ^http://
+                        - type: string
+                          description: a string starting with "https://"
+                          title: startsWith("https://")
+                          pattern: ^https://
+                  description: >-
+                    A URL pointing to an image file. The URL path must end with
+                    .jpg, .jpeg, or .png.
+                  title: maxLength(1024)
+                  minLength: 10
+                  maxLength: 1024
+                secondaryProfilePhoto:
+                  anyOf:
+                    - type: string
+                    - anyOf:
+                        - type: string
+                          description: a string starting with "http://"
+                          title: startsWith("http://")
+                          pattern: ^http://
+                        - type: string
+                          description: a string starting with "https://"
+                          title: startsWith("https://")
+                          pattern: ^https://
+                  description: >-
+                    A URL pointing to an image file. The URL path must end with
+                    .jpg, .jpeg, or .png.
+                  title: maxLength(1024)
+                  minLength: 10
+                  maxLength: 1024
+                coverPhoto:
+                  anyOf:
+                    - type: string
+                    - anyOf:
+                        - type: string
+                          description: a string starting with "http://"
+                          title: startsWith("http://")
+                          pattern: ^http://
+                        - type: string
+                          description: a string starting with "https://"
+                          title: startsWith("https://")
+                          pattern: ^https://
+                  description: >-
+                    A URL pointing to an image file. The URL path must end with
+                    .jpg, .jpeg, or .png.
+                  title: maxLength(1024)
+                  minLength: 10
+                  maxLength: 1024
+                socials:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/NonEmptyString"
+                    description: a string at most 128 character(s) long
+                    title: maxLength(128)
+                    maxLength: 128
+                lastName:
+                  $ref: "#/components/schemas/NonEmptyString"
+              additionalProperties: false
+        required: true
+    get:
+      tags:
+        - customerV1
+      operationId: customerV1.readIndividualCustomersV1
+      parameters:
+        - name: pageSize
+          in: query
+          schema:
+            $ref: "#/components/schemas/NumberFromString"
+          required: false
+        - name: cursor
+          in: query
+          schema:
+            type: string
+          required: false
+      security: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                  - _links
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required:
+                        - externalId
+                        - firstName
+                        - lastName
+                        - workingRelationships
+                        - displayProfileOnSite
+                        - profilePhoto
+                        - secondaryProfilePhoto
+                        - coverPhoto
+                        - aboutMe
+                        - industryStartYear
+                        - awards
+                        - professionalWebsite
+                        - socials
+                      properties:
+                        externalId:
+                          $ref: "#/components/schemas/UUID"
+                        firstName:
+                          $ref: "#/components/schemas/NonEmptyString"
+                        lastName:
+                          type: string
+                        workingRelationships:
+                          type: array
+                          minItems: 1
+                          items:
+                            type: object
+                            required:
+                              - agencyId
+                              - contactEmail
+                              - contactPhone
+                              - jobTitle
+                              - roleType
+                              - startDate
+                              - endDate
+                            properties:
+                              agencyId:
+                                type: string
+                                description: a string matching the pattern ^[A-Z]{6}$
+                                pattern: ^[A-Z]{6}$
+                              contactEmail:
+                                type: string
+                                description: >-
+                                  a string matching the pattern
+                                  ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                                pattern: >-
+                                  ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                              contactPhone:
+                                type: string
+                                description: a string matching the pattern ^\+614\d{8}$
+                                pattern: ^\+614\d{8}$
+                              jobTitle:
+                                $ref: "#/components/schemas/NonEmptyString"
+                              roleType:
+                                type: string
+                                enum:
+                                  - Principal
+                                  - Sales
+                                  - PropertyManagement
+                                  - Administration
+                              primaryOffice:
+                                type: boolean
+                              startDate:
+                                type: string
+                              endDate:
+                                anyOf:
+                                  - type: string
+                                  - type: "null"
+                            additionalProperties: false
+                        displayProfileOnSite:
+                          type: boolean
+                        profilePhoto:
+                          anyOf:
+                            - $ref: "#/components/schemas/NonEmptyString"
+                            - type: "null"
+                        secondaryProfilePhoto:
+                          anyOf:
+                            - $ref: "#/components/schemas/NonEmptyString"
+                            - type: "null"
+                        coverPhoto:
+                          anyOf:
+                            - $ref: "#/components/schemas/NonEmptyString"
+                            - type: "null"
+                        aboutMe:
+                          $ref: "#/components/schemas/NonEmptyString"
+                        industryStartYear:
+                          anyOf:
+                            - $ref: "#/components/schemas/Int"
+                              description: a number less than or equal to 2026
+                              title: lessThanOrEqualTo(2026)
+                              minimum: 1900
+                              maximum: 2026
+                            - type: "null"
+                        awards:
+                          anyOf:
+                            - type: array
+                              items:
+                                type: object
+                                required:
+                                  - name
+                                  - year
+                                  - agencyId
+                                properties:
+                                  name:
+                                    $ref: "#/components/schemas/NonEmptyString"
+                                  year:
+                                    $ref: "#/components/schemas/Int"
+                                    description: a number less than or equal to 2026
+                                    title: lessThanOrEqualTo(2026)
+                                    minimum: 1900
+                                    maximum: 2026
+                                  agencyId:
+                                    type: string
+                                    description: a string matching the pattern ^[A-Z]{6}$
+                                    pattern: ^[A-Z]{6}$
+                                additionalProperties: false
+                            - type: "null"
+                        professionalWebsite:
+                          anyOf:
+                            - type: string
+                            - type: "null"
+                        socials:
+                          anyOf:
+                            - type: array
+                              items:
+                                $ref: "#/components/schemas/NonEmptyString"
+                                description: a string at most 128 character(s) long
+                                title: maxLength(128)
+                                maxLength: 128
+                            - type: "null"
+                      additionalProperties: false
+                  _links:
+                    type: object
+                    required:
+                      - next
+                    properties:
+                      next:
+                        type: object
+                        required:
+                          - href
+                        properties:
+                          href:
+                            anyOf:
+                              - type: string
+                              - type: "null"
+                            description: >-
+                              An opaque cursor that encodes where you are in the
+                              ordered stream of results, not an ID or page
+                              number.
+                        additionalProperties: false
+                    additionalProperties: false
+                additionalProperties: false
+        "400":
+          description: The request did not match the expected schema
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/HttpApiDecodeError"
+                  - $ref: "#/components/schemas/Rfc7807ApiError.DecodeError"
+                  - $ref: "#/components/schemas/BadRequest"
+        "404":
+          description: NotFound
+  /v1/individual-customers/{id}:
+    get:
+      tags:
+        - customerV1
+      operationId: customerV1.readIndividualCustomerV1
+      parameters:
+        - name: id
+          in: path
+          schema:
+            $ref: "#/components/schemas/UUID"
+          required: true
+      security: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - externalId
+                  - firstName
+                  - lastName
+                  - workingRelationships
+                  - displayProfileOnSite
+                  - profilePhoto
+                  - secondaryProfilePhoto
+                  - coverPhoto
+                  - aboutMe
+                  - industryStartYear
+                  - awards
+                  - professionalWebsite
+                  - socials
+                properties:
+                  externalId:
+                    $ref: "#/components/schemas/UUID"
+                  firstName:
+                    $ref: "#/components/schemas/NonEmptyString"
+                  lastName:
+                    type: string
+                  workingRelationships:
+                    type: array
+                    minItems: 1
+                    items:
+                      type: object
+                      required:
+                        - agencyId
+                        - contactEmail
+                        - contactPhone
+                        - jobTitle
+                        - roleType
+                        - startDate
+                        - endDate
+                      properties:
+                        agencyId:
+                          type: string
+                          description: a string matching the pattern ^[A-Z]{6}$
+                          pattern: ^[A-Z]{6}$
+                        contactEmail:
+                          type: string
+                          description: >-
+                            a string matching the pattern
+                            ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                          pattern: >-
+                            ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                        contactPhone:
+                          type: string
+                          description: a string matching the pattern ^\+614\d{8}$
+                          pattern: ^\+614\d{8}$
+                        jobTitle:
+                          $ref: "#/components/schemas/NonEmptyString"
+                        roleType:
+                          type: string
+                          enum:
+                            - Principal
+                            - Sales
+                            - PropertyManagement
+                            - Administration
+                        primaryOffice:
+                          type: boolean
+                        startDate:
+                          type: string
+                        endDate:
+                          anyOf:
+                            - type: string
+                            - type: "null"
+                      additionalProperties: false
+                  displayProfileOnSite:
+                    type: boolean
+                  profilePhoto:
+                    anyOf:
+                      - $ref: "#/components/schemas/NonEmptyString"
+                      - type: "null"
+                  secondaryProfilePhoto:
+                    anyOf:
+                      - $ref: "#/components/schemas/NonEmptyString"
+                      - type: "null"
+                  coverPhoto:
+                    anyOf:
+                      - $ref: "#/components/schemas/NonEmptyString"
+                      - type: "null"
+                  aboutMe:
+                    $ref: "#/components/schemas/NonEmptyString"
+                  industryStartYear:
+                    anyOf:
+                      - $ref: "#/components/schemas/Int"
+                        description: a number less than or equal to 2026
+                        title: lessThanOrEqualTo(2026)
+                        minimum: 1900
+                        maximum: 2026
+                      - type: "null"
+                  awards:
+                    anyOf:
+                      - type: array
+                        items:
+                          type: object
+                          required:
+                            - name
+                            - year
+                            - agencyId
+                          properties:
+                            name:
+                              $ref: "#/components/schemas/NonEmptyString"
+                            year:
+                              $ref: "#/components/schemas/Int"
+                              description: a number less than or equal to 2026
+                              title: lessThanOrEqualTo(2026)
+                              minimum: 1900
+                              maximum: 2026
+                            agencyId:
+                              type: string
+                              description: a string matching the pattern ^[A-Z]{6}$
+                              pattern: ^[A-Z]{6}$
+                          additionalProperties: false
+                      - type: "null"
+                  professionalWebsite:
+                    anyOf:
+                      - type: string
+                      - type: "null"
+                  socials:
+                    anyOf:
+                      - type: array
+                        items:
+                          $ref: "#/components/schemas/NonEmptyString"
+                          description: a string at most 128 character(s) long
+                          title: maxLength(128)
+                          maxLength: 128
+                      - type: "null"
+                additionalProperties: false
+        "400":
+          description: The request did not match the expected schema
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/HttpApiDecodeError"
+                  - $ref: "#/components/schemas/Rfc7807ApiError.DecodeError"
+                  - $ref: "#/components/schemas/BadRequest"
+        "404":
+          description: NotFound
+  /v1/individual-customers/{externalId}:
+    put:
+      tags:
+        - customerV1
+      operationId: customerV1.putIndividualCustomerV1
+      parameters:
+        - name: externalId
+          in: path
+          schema:
+            $ref: "#/components/schemas/UUID"
+          required: true
+      security: []
+      responses:
+        "200":
+          description: a Universally Unique Identifier
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UUID"
+        "400":
+          description: The request did not match the expected schema
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/HttpApiDecodeError"
+                  - $ref: "#/components/schemas/Rfc7807ApiError.DecodeError"
+                  - $ref: "#/components/schemas/BadRequest"
+        "404":
+          description: NotFound
+        "500":
+          description: InternalServerError
+      requestBody:
+        content:
+          application/json:
+            example:
+              firstName: Jane
+              lastName: Smith
+              displayProfile: true
+              aboutMe: Jane is an award-winning sales agent with over 12 years experience across Melbourne inner suburbs.
+              industryStartYear: 2014
+              professionalWebsite: https://www.example-agency.com.au/jane-smith
+              profilePhoto: https://example.com/images/primary-photo.jpg
+              secondaryProfilePhoto: https://example.com/images/secondary-photo.jpg
+              coverPhoto: https://example.com/images/cover-photo.jpg
+              socials:
+                - https://www.linkedin.com/in/janesmith
+              awards:
+                - name: Top Sales Agent
+                  year: 2024
+                  agencyId: ABCDEF
+                - name: Industry Excellence Award
+                  year: 2025
+                  agencyId: ABCDEF
+            schema:
+              type: object
+              required:
+                - firstName
+                - displayProfile
+                - aboutMe
+                - lastName
+                - awards
+                - industryStartYear
+                - professionalWebsite
+                - profilePhoto
+                - secondaryProfilePhoto
+                - coverPhoto
+                - socials
+              properties:
+                firstName:
+                  $ref: "#/components/schemas/NonEmptyString"
+                displayProfile:
+                  type: boolean
+                aboutMe:
+                  $ref: "#/components/schemas/NonEmptyString"
+                awards:
+                  type: array
+                  items:
+                    type: object
+                    required:
+                      - name
+                      - year
+                      - agencyId
+                    properties:
+                      name:
+                        $ref: "#/components/schemas/NonEmptyString"
+                      year:
+                        $ref: "#/components/schemas/Int"
+                        description: a number less than or equal to 2026
+                        title: lessThanOrEqualTo(2026)
+                        minimum: 1900
+                        maximum: 2026
+                      agencyId:
+                        type: string
+                        description: a string matching the pattern ^[A-Z]{6}$
+                        pattern: ^[A-Z]{6}$
+                    additionalProperties: false
+                industryStartYear:
+                  $ref: "#/components/schemas/Int"
+                  description: a number less than or equal to 2026
+                  title: lessThanOrEqualTo(2026)
+                  minimum: 1900
+                  maximum: 2026
+                professionalWebsite:
+                  anyOf:
+                    - type: string
+                    - anyOf:
+                        - type: string
+                          description: a string starting with "http://"
+                          title: startsWith("http://")
+                          pattern: ^http://
+                        - type: string
+                          description: a string starting with "https://"
+                          title: startsWith("https://")
+                          pattern: ^https://
+                  description: a string at most 1024 character(s) long
+                  title: maxLength(1024)
+                  minLength: 10
+                  maxLength: 1024
+                profilePhoto:
+                  anyOf:
+                    - type: string
+                    - anyOf:
+                        - type: string
+                          description: a string starting with "http://"
+                          title: startsWith("http://")
+                          pattern: ^http://
+                        - type: string
+                          description: a string starting with "https://"
+                          title: startsWith("https://")
+                          pattern: ^https://
+                  description: >-
+                    A URL pointing to an image file. The URL path must end with
+                    .jpg, .jpeg, or .png.
+                  title: maxLength(1024)
+                  minLength: 10
+                  maxLength: 1024
+                secondaryProfilePhoto:
+                  anyOf:
+                    - type: string
+                    - anyOf:
+                        - type: string
+                          description: a string starting with "http://"
+                          title: startsWith("http://")
+                          pattern: ^http://
+                        - type: string
+                          description: a string starting with "https://"
+                          title: startsWith("https://")
+                          pattern: ^https://
+                  description: >-
+                    A URL pointing to an image file. The URL path must end with
+                    .jpg, .jpeg, or .png.
+                  title: maxLength(1024)
+                  minLength: 10
+                  maxLength: 1024
+                coverPhoto:
+                  anyOf:
+                    - type: string
+                    - anyOf:
+                        - type: string
+                          description: a string starting with "http://"
+                          title: startsWith("http://")
+                          pattern: ^http://
+                        - type: string
+                          description: a string starting with "https://"
+                          title: startsWith("https://")
+                          pattern: ^https://
+                  description: >-
+                    A URL pointing to an image file. The URL path must end with
+                    .jpg, .jpeg, or .png.
+                  title: maxLength(1024)
+                  minLength: 10
+                  maxLength: 1024
+                socials:
+                  type: array
+                  items:
+                    $ref: "#/components/schemas/NonEmptyString"
+                    description: a string at most 128 character(s) long
+                    title: maxLength(128)
+                    maxLength: 128
+                lastName:
+                  $ref: "#/components/schemas/NonEmptyString"
+              additionalProperties: false
+        required: true
+  /v1/individual-customers/{externalId}/offboard:
+    post:
+      tags:
+        - customerV1
+      operationId: customerV1.postOffboardIndividualCustomerV1
+      parameters:
+        - name: externalId
+          in: path
+          schema:
+            $ref: "#/components/schemas/UUID"
+          required: true
+      security: []
+      responses:
+        "204":
+          description: Success
+        "400":
+          description: The request did not match the expected schema
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/HttpApiDecodeError"
+                  - $ref: "#/components/schemas/Rfc7807ApiError.DecodeError"
+                  - $ref: "#/components/schemas/BadRequest"
+        "404":
+          description: NotFound
+        "500":
+          description: InternalServerError
+  /v1/individual-customers/{externalId}/add-working-relationships:
+    post:
+      tags:
+        - customerV1
+      operationId: customerV1.addWorkingRelationshipsV1
+      parameters:
+        - name: externalId
+          in: path
+          schema:
+            $ref: "#/components/schemas/UUID"
+          required: true
+      security: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - workingRelationships
+                properties:
+                  workingRelationships:
+                    type: array
+                    minItems: 1
+                    items:
+                      type: object
+                      required:
+                        - agencyId
+                      properties:
+                        agencyId:
+                          type: string
+                          description: a string matching the pattern ^[A-Z]{6}$
+                          pattern: ^[A-Z]{6}$
+                      additionalProperties: false
+                additionalProperties: false
+        "400":
+          description: The request did not match the expected schema
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/HttpApiDecodeError"
+                  - $ref: "#/components/schemas/Rfc7807ApiError.DecodeError"
+                  - $ref: "#/components/schemas/BadRequest"
+        "404":
+          description: NotFound
+        "500":
+          description: InternalServerError
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - workingRelationships
+              properties:
+                workingRelationships:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required:
+                      - agencyId
+                      - workplaceEmail
+                      - contactEmail
+                      - contactPhone
+                      - roleType
+                      - jobTitle
+                    properties:
+                      agencyId:
+                        type: string
+                        description: a string matching the pattern ^[A-Z]{6}$
+                        pattern: ^[A-Z]{6}$
+                      workplaceEmail:
+                        type: string
+                        description: >-
+                          a string matching the pattern
+                          ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                        pattern: >-
+                          ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                      contactEmail:
+                        type: string
+                        description: >-
+                          a string matching the pattern
+                          ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                        pattern: >-
+                          ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                      contactPhone:
+                        type: string
+                        description: a string matching the pattern ^\+614\d{8}$
+                        pattern: ^\+614\d{8}$
+                      roleType:
+                        type: string
+                        enum:
+                          - Principal
+                          - Sales
+                          - PropertyManagement
+                          - Administration
+                      jobTitle:
+                        $ref: "#/components/schemas/NonEmptyString"
+                      primaryOffice:
+                        type: boolean
+                        description: >-
+                          Indicates if this is the primary office. If set to
+                          true, any existing primary working relationship will
+                          be auto-demoted.
+                    additionalProperties: false
+              additionalProperties: false
+        required: true
+  /v1/individual-customers/{externalId}/end-working-relationships:
+    post:
+      tags:
+        - customerV1
+      operationId: customerV1.endWorkingRelationshipsV1
+      parameters:
+        - name: externalId
+          in: path
+          schema:
+            $ref: "#/components/schemas/UUID"
+          required: true
+      security: []
+      responses:
+        "204":
+          description: Success
+        "400":
+          description: The request did not match the expected schema
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/HttpApiDecodeError"
+                  - $ref: "#/components/schemas/Rfc7807ApiError.DecodeError"
+                  - $ref: "#/components/schemas/BadRequest"
+        "404":
+          description: NotFound
+        "500":
+          description: InternalServerError
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - agencyIds
+              properties:
+                agencyIds:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    description: a string matching the pattern ^[A-Z]{6}$
+                    pattern: ^[A-Z]{6}$
+              additionalProperties: false
+        required: true
+  /v1/individual-customers/{externalId}/working-relationships/{agencyId}:
+    put:
+      tags:
+        - customerV1
+      operationId: customerV1.updateWorkingRelationshipV1
+      parameters:
+        - name: externalId
+          in: path
+          schema:
+            $ref: "#/components/schemas/UUID"
+          required: true
+        - name: agencyId
+          in: path
+          schema:
+            type: string
+            description: a string matching the pattern ^[A-Z]{6}$
+            pattern: ^[A-Z]{6}$
+          required: true
+          description: a string matching the pattern ^[A-Z]{6}$
+      security: []
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - contactEmail
+                  - contactPhone
+                  - roleType
+                  - jobTitle
+                  - agencyId
+                properties:
+                  contactEmail:
+                    type: string
+                    description: >-
+                      a string matching the pattern
+                      ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                    pattern: >-
+                      ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                  contactPhone:
+                    type: string
+                    description: a string matching the pattern ^\+614\d{8}$
+                    pattern: ^\+614\d{8}$
+                  roleType:
+                    type: string
+                    enum:
+                      - Principal
+                      - Sales
+                      - PropertyManagement
+                      - Administration
+                  jobTitle:
+                    $ref: "#/components/schemas/NonEmptyString"
+                  primaryOffice:
+                    type: boolean
+                  agencyId:
+                    type: string
+                    description: a string matching the pattern ^[A-Z]{6}$
+                    pattern: ^[A-Z]{6}$
+                additionalProperties: false
+        "400":
+          description: The request did not match the expected schema
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/HttpApiDecodeError"
+                  - $ref: "#/components/schemas/Rfc7807ApiError.DecodeError"
+                  - $ref: "#/components/schemas/BadRequest"
+        "404":
+          description: NotFound
+        "500":
+          description: InternalServerError
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - contactEmail
+                - contactPhone
+                - roleType
+                - jobTitle
+              properties:
+                contactEmail:
+                  type: string
+                  description: >-
+                    a string matching the pattern
+                    ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                  pattern: >-
+                    ^(?!\.)(?!.*\.\.)([a-z0-9_'+\-.]*)[a-z0-9_+-]@([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}$
+                contactPhone:
+                  type: string
+                  description: a string matching the pattern ^\+614\d{8}$
+                  pattern: ^\+614\d{8}$
+                roleType:
+                  type: string
+                  enum:
+                    - Principal
+                    - Sales
+                    - PropertyManagement
+                    - Administration
+                jobTitle:
+                  $ref: "#/components/schemas/NonEmptyString"
+                primaryOffice:
+                  type: boolean
+              additionalProperties: false
+        required: true
+components:
+  schemas:
+    HttpApiDecodeError:
+      type: object
+      required:
+        - issues
+        - message
+        - _tag
+      properties:
+        issues:
+          type: array
+          items:
+            $ref: "#/components/schemas/Issue"
+        message:
+          type: string
+        _tag:
+          type: string
+          enum:
+            - HttpApiDecodeError
+      additionalProperties: false
+      description: The request did not match the expected schema
+    Issue:
+      type: object
+      required:
+        - _tag
+        - path
+        - message
+      properties:
+        _tag:
+          type: string
+          enum:
+            - Pointer
+            - Unexpected
+            - Missing
+            - Composite
+            - Refinement
+            - Transformation
+            - Type
+            - Forbidden
+          description: The tag identifying the type of parse issue
+        path:
+          type: array
+          items:
+            $ref: "#/components/schemas/PropertyKey"
+          description: The path to the property where the issue occurred
+        message:
+          type: string
+          description: A descriptive message explaining the issue
+      additionalProperties: false
+      description: >-
+        Represents an error encountered while parsing a value to match the
+        schema
+    PropertyKey:
+      anyOf:
+        - type: string
+        - type: number
+        - type: object
+          required:
+            - _tag
+            - key
+          properties:
+            _tag:
+              type: string
+              enum:
+                - symbol
+            key:
+              type: string
+          additionalProperties: false
+          description: an object to be decoded into a globally shared symbol
+    NonEmptyString:
+      type: string
+      description: a non empty string
+      title: nonEmptyString
+      minLength: 1
+    Int:
+      type: integer
+      description: an integer
+      title: int
+    UUID:
+      type: string
+      description: a Universally Unique Identifier
+      format: uuid
+      pattern: >-
+        ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    Rfc7807ApiError.DecodeError:
+      type: object
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - errors
+        - _tag
+      properties:
+        type:
+          $ref: "#/components/schemas/NonEmptyString"
+        title:
+          $ref: "#/components/schemas/NonEmptyString"
+        status:
+          type: number
+        detail:
+          $ref: "#/components/schemas/NonEmptyString"
+        errors:
+          type: array
+          items:
+            type: object
+            required:
+              - path
+              - message
+            properties:
+              path:
+                type: string
+              message:
+                $ref: "#/components/schemas/NonEmptyString"
+            additionalProperties: false
+        _tag:
+          type: string
+          enum:
+            - Rfc7807ApiError.DecodeError
+      additionalProperties: false
+      description: The request did not match the expected schema (RFC 7807)
+    BadRequest:
+      $id: /schemas/void
+      title: BadRequest
+    NumberFromString:
+      type: string
+      description: a string to be decoded into a number
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            customer-profile:individual-customer:read: Retrieve customer profile data
+            customer-profile:individual-customer:write: Create, update, and offboard customer profiles
+security:
+  - PartnerPlatform:
+      - customer-profile:individual-customer:read
+      - customer-profile:individual-customer:write
+tags:
+  - name: diagnostic
+  - name: customerV1

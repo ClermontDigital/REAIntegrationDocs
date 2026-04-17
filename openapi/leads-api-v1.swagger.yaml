@@ -1,0 +1,814 @@
+openapi: 3.1.1
+info:
+  title: Leads API
+  description: Retrieve leads enquiries from Leads API
+  version: 1.1.1
+servers:
+  - url: https://api.realestate.com.au/lead
+security:
+  - PartnerPlatform:
+      - lead:enquiries:read
+paths:
+  /v1/enquiries:
+    get:
+      summary: Get multiple enquiries accessible to the partner
+      description: >
+        The Enquiries endpoint returns a paginated collection of enquiries that
+        the partner has
+
+        read access to.
+
+        Supports the following query parameters:
+          * since
+          * page
+          * agency_id
+          * agent_profile_id
+          * listing_ids
+          * exclude_types
+      parameters:
+        - schema:
+            type: string
+          name: since
+          in: query
+          description: Either `since` or `page` is required! An ISO-8601 timestamp (UTC)
+            representing the point in time to begin consuming enquiries from.
+          required: false
+        - schema:
+            type: string
+          name: page
+          in: query
+          description: Either `since` or `page` is required! A unique identifier
+            representing the page.
+          required: false
+        - schema:
+            type: string
+          name: agency_id
+          in: query
+          description: String representing a specific agency id. e.g ABCDEF.
+          required: false
+        - schema:
+            type: string
+          name: agent_profile_id
+          in: query
+          description: String representing a specific salesperson id. e.g 123.
+          required: false
+        - schema:
+            type: string
+          name: listing_ids
+          in: query
+          description: String of comma separated listing ids for an enquiry.
+          required: false
+        - schema:
+            type: string
+          name: exclude_types
+          in: query
+          description: String of comma separated enquiry types to be removed from response.
+          required: false
+      tags:
+        - Enquiries
+      responses:
+        "200":
+          description: A set of enquiries received after the since timestamp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enquiries"
+        "400":
+          description: Bad request. The request is missing required fields or is malformed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized. The request requires a valid authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden. Access to the requested resource is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found. The requested resource cannot be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "405":
+          description: Method Not Allowed. The requested HTTP Method is not permitted on
+            this resource.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "406":
+          description: Not Acceptable. The response content type is not acceptable
+            according to the accept headers sent in the request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests
+            permitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error. Sorry, your request could not be serviced at
+            this time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - PartnerPlatform:
+            - lead:enquiries:read
+  /v1/enquiries/{enquiry_id}:
+    get:
+      summary: Get a single enquiry resource
+      description: >
+        The /enquiries/{enquiry_id} endpoint returns a single enquiry with the
+        given ID.
+      parameters:
+        - schema:
+            type: string
+          name: enquiry_id
+          in: path
+          description: Unique identifier representing a specific enquiry.
+          required: true
+      tags:
+        - Enquiries
+      responses:
+        "200":
+          description: A consumer enquiry for the supplied enquiry id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enquiry"
+        "400":
+          description: Bad request. The request is missing required fields or is malformed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized. The request requires a valid authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden. Access to the requested resource is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found. The requested resource cannot be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "405":
+          description: Method Not Allowed. The requested HTTP Method is not permitted on
+            this resource.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "406":
+          description: Not Acceptable. The response content type is not acceptable
+            according to the accept headers sent in the request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests
+            permitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error. Sorry, your request could not be serviced at
+            this time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - PartnerPlatform:
+            - lead:enquiries:read
+  /v1/enquiries/count:
+    get:
+      summary: Get the count of enquiries since a given date.
+      description: >
+        The Enquiries Count endpoint returns the count of enquiries after a
+        given date.
+      parameters:
+        - schema:
+            type: string
+          name: since
+          in: query
+          description: An ISO-8601 timestamp (UTC) representing the point in time to begin
+            consuming enquiries from.
+          required: true
+      tags:
+        - Enquiries
+      responses:
+        "200":
+          description: A set of enquiries received after the since timestamp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Enquiries"
+        "400":
+          description: Bad request. The request is missing required fields or is malformed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized. The request requires a valid authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden. Access to the requested resource is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found. The requested resource cannot be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "405":
+          description: Method Not Allowed. The requested HTTP Method is not permitted on
+            this resource.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "406":
+          description: Not Acceptable. The response content type is not acceptable
+            according to the accept headers sent in the request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests
+            permitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error. Sorry, your request could not be serviced at
+            this time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - PartnerPlatform:
+            - lead:enquiries:read
+  /v2/seller-leads:
+    get:
+      tags:
+        - Seller Leads
+      summary: Get enriched seller leads accessible to the partner
+      description: >
+        Returns a paginated collection of enriched seller leads that the partner
+        has read access to.
+
+        Supports the following query parameters:
+          * since
+          * page
+          * agency_id
+          * agent_profile_id
+      operationId: getSellerLeads
+      parameters:
+        - schema:
+            type: string
+          name: since
+          in: query
+          description: Either `since` or `page` is required! An ISO-8601 timestamp (UTC)
+            representing the point in time to begin consuming requests from.
+        - schema:
+            type: string
+          name: page
+          in: query
+          description: Either `since` or `page` is required! A unique identifier
+            representing the page.
+        - schema:
+            type: string
+          name: agency_id
+          in: query
+          description: String representing a specific agency id. e.g ABCDEF.
+        - schema:
+            type: string
+          name: agent_profile_id
+          in: query
+          description: String representing a specific salesperson id. e.g 123.
+      responses:
+        "200":
+          description: A set of appraisal requests received after the since timestamp
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerLeads"
+        "400":
+          description: Bad request. The request is missing required fields or is malformed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized. The request requires a valid authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden. Access to the requested resource is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found. The requested resource cannot be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "405":
+          description: Method Not Allowed. The requested HTTP Method is not permitted on
+            this resource.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "406":
+          description: Not Acceptable. The response content type is not acceptable
+            according to the accept headers sent in the request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests
+            permitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error. Sorry, your request could not be serviced at
+            this time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - PartnerPlatform:
+            - lead:enquiries:read
+  /v2/seller-leads/{enquiry_id}:
+    get:
+      tags:
+        - Seller Leads
+      summary: Get a single enriched seller lead resource
+      description: |
+        Returns a single enriched seller lead for the given enquiry_id.
+      operationId: getSellerLead
+      parameters:
+        - schema:
+            type: string
+          name: enquiry_id
+          in: path
+          description: Unique identifier representing a specific seller lead.
+          required: true
+      responses:
+        "200":
+          description: Appraisal request or potential seller matching given enquiry_id
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SellerLead"
+        "400":
+          description: Bad request. The request is missing required fields or is malformed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          description: Unauthorized. The request requires a valid authentication token.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: Forbidden. Access to the requested resource is forbidden.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Not Found. The requested resource cannot be found.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "405":
+          description: Method Not Allowed. The requested HTTP Method is not permitted on
+            this resource.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "406":
+          description: Not Acceptable. The response content type is not acceptable
+            according to the accept headers sent in the request.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          description: Too Many Requests. You have exceeded the maximum number of requests
+            permitted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          description: Internal Server Error. Sorry, your request could not be serviced at
+            this time.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        default:
+          description: Unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+      security:
+        - PartnerPlatform:
+            - lead:enquiries:read
+components:
+  schemas:
+    BaseEnquiry:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier representing a specific enquiry.
+        agencyId:
+          type: string
+          description: Identifier representing the agency that owns the listing that
+            the enquiry is for.
+        receivedAt:
+          type: string
+          description: Date/Time that the enquiry was received by REA Group.
+          format: date-time
+        processedAt:
+          type: string
+          description: Date/Time that the enquiry was processed by REA Group.
+          format: date-time
+        comments:
+          type: string
+          description: The enquirer's free-form comments.
+        requestedInformation:
+          type: array
+          description: A list of information the enquirer is asking for.
+          items:
+            type: string
+        suppliedMarketStatus:
+          type: string
+          description: The enquirer's description of their market status.
+        agentRecipients:
+          type: array
+          description: A list of recipients for this enquiry.
+          items:
+            type: string
+        contactDetails:
+          $ref: '#/components/schemas/ContactDetails'
+        source:
+          $ref: '#/components/schemas/Source'
+        externalIdentifiers:
+          $ref: '#/components/schemas/ExternalIdentifiers'
+        customAttributes:
+          $ref: '#/components/schemas/CustomAttributes'
+        emailSubject:
+          type: string
+          description: The subject of the email.
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: '#/components/schemas/Link'
+    ContactDetails:
+      type: object
+      required:
+        - fullName
+        - email
+        - preferredContactMethod
+      properties:
+        fullName:
+          type: string
+          description: Full name of the person sending an enquiry.
+        email:
+          type: string
+          description: Email address used to contact the person sending an enquiry.
+        phone:
+          type: string
+          description: Phone number used to contact the person sending an enquiry.
+        postcode:
+          type: string
+          description: The enquirer's supplied postcode.
+        preferredContactMethod:
+          type: string
+          description: Preferred contact method supplied by the person sending an enquiry.
+          enum:
+          - PHONE
+          - EMAIL
+    SellerLeads:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            seller-leads:
+              type: array
+              items:
+                $ref: "#/components/schemas/SellerLead"
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+    SellerLead:
+      allOf:
+        - $ref: "#/components/schemas/BaseEnquiry"
+        - type: object
+          required:
+            - type
+          properties:
+            type:
+              type: string
+              description: The type of seller lead that was captured.
+              enum:
+                - REALESTATE_COM_AU_SALES_APPRAISAL_REQUEST
+                - REALESTATE_COM_AU_RENTAL_APPRAISAL_REQUEST
+                - REALESTATE_COM_AU_BANK_VALUATION_REQUEST
+                - REALESTATE_COM_AU_OTHER_REQUEST
+                - REALESTATE_COM_AU_POTENTIAL_SELLER
+            sellerEnrichment:
+              oneOf:
+                - $ref: "#/components/schemas/SellerEnrichmentResult"
+                - $ref: "#/components/schemas/SellerEnrichmentError"
+            property:
+              $ref: "#/components/schemas/Property"
+            agentsContactedCount:
+              type: integer
+              description: "[Appraisal requests only] Number of agents that received an
+                appraisal request for this property."
+            leasingPriceExpectation:
+              type: integer
+              description: "[Appraisal requests only] Weekly rent price expectation provided
+                by property owner at time of request."
+            leasingTimeframe:
+              type: string
+              description: "[Appraisal requests only] Timeframe to lease as provided by
+                property owner at time of request."
+              enum:
+                - WITHIN_3_MONTHS
+                - WITHIN_6_MONTHS
+                - WITHIN_12_MONTHS
+                - NOT_SURE
+            sellingPriceExpectation:
+              type: integer
+              description: "[Appraisal requests only] Sale price expectation provided by
+                property owner at time of request."
+            sellingTimeframe:
+              type: string
+              description: "[Appraisal requests only] Timeframe to sell as provided by
+                property owner at time of request."
+              enum:
+                - WITHIN_3_MONTHS
+                - WITHIN_6_MONTHS
+                - WITHIN_12_MONTHS
+                - NOT_SURE
+            propertyPrimaryUse:
+              type: string
+              description: "[Appraisal requests only] REA category used to describe how the
+                property is being used as selected by property owner at time of
+                request."
+              enum:
+                - INVESTMENT
+                - RESIDENTIAL
+            agentPhoneRevealsCount:
+              type: integer
+              description: "[Pro required, appraisal requests only] Number of phone reveals of
+                agents by the consumer making the original request."
+    SellerEnrichmentResult:
+      type: object
+      properties:
+        sellerScore:
+          type: integer
+          description: "[Pro required] X out of 10 value representing seller enrichment
+            score."
+        sellerReadiness:
+          type: string
+          description: "[Pro required] Value indicating where the consumer is in their
+            sell journey."
+          enum:
+            - EARLY_SELL_STAGE
+            - MID_SELL_STAGE
+            - LATE_SELL_STAGE
+        buyerReadiness:
+          type: string
+          description: "[Pro required] Value indicating where the consumer is in their buy
+            journey."
+          enum:
+            - low
+            - medium
+            - high
+        predicatedSellerSuburb:
+          type: string
+          description: "[Pro required, potential seller only] A predicted suburb where the
+            consumer's property to be sold is located"
+    SellerEnrichmentError:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Reason why seller enrichment information is not available
+          enum:
+            - SELLER_ENRICHMENT_NO_DATA
+            - SELLER_ENRICHMENT_NOT_PURCHASED
+        description:
+          type: string
+          description: Further details on why seller enrichment information is not available
+    Enquiries:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            enquiries:
+              type: array
+              items:
+                $ref: "#/components/schemas/Enquiry"
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+    Enquiry:
+      allOf:
+        - $ref: "#/components/schemas/BaseEnquiry"
+        - type: object
+          properties:
+            type:
+              type: string
+              description: The type of enquiry that was captured.
+              enum:
+                - DEVELOPER_BUILDER_DESIGN
+                - DEVELOPER_BUILDER_DISPLAY_VISIT
+                - DEVELOPER_BUILDER_GENERAL
+                - DEVELOPER_BUILDER_INFORMATION_PACK
+                - DEVELOPER_BUILDER_PROMOTION
+                - DEVELOPER_PROJECT
+                - DEVELOPER_PROJECT_DOCUMENT_DOWNLOAD
+                - DEVELOPER_INSPECTION_REGISTRATION
+                - DEVELOPER_EXTENSION_CAMPAIGN
+                - REALCOMMERCIAL_COM_AU_BUY
+                - REALCOMMERCIAL_COM_AU_BUY_AND_LEASE
+                - REALCOMMERCIAL_COM_AU_FIND_AGENCY
+                - REALCOMMERCIAL_COM_AU_LEASE
+                - REALCOMMERCIAL_COM_AU_DOCUMENT_ACCESS
+                - REALESTATE_COM_AU_AGENCY
+                - REALESTATE_COM_AU_AGENT
+                - REALESTATE_COM_AU_LISTING
+                - REALESTATE_COM_AU_LEAD_AD
+                - REALESTATE_COM_AU_RENT
+                - REALESTATE_COM_AU_SALES_APPRAISAL_REQUEST
+                - REALESTATE_COM_AU_RENTAL_APPRAISAL_REQUEST
+                - REALESTATE_COM_AU_AGENCY_SALES_APPRAISAL_REQUEST
+                - REALESTATE_COM_AU_AGENCY_RENTAL_APPRAISAL_REQUEST
+            listing:
+              $ref: "#/components/schemas/Listing"
+    Listing:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier representing a specific listing.
+        externalListingId:
+          type: string
+          deprecated: true
+          description: The partner's identifier for the listing. Deprecated - please use externalIdentifiers.externalListingId instead.
+        parentId:
+          type: string
+          description: The parent listing's identifier in the case of a child project
+            listing.
+        address:
+          type: string
+          description: The address of the listed property.
+    Property:
+      type: object
+      properties:
+        address:
+          type: string
+          description: "[Appraisal requests only] The address of the property."
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          description: Hyperlink to a Leads API resource
+    Source:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The id of the enquiry source, e.g campaign id, project profile id or listing id.
+        name:
+          type: string
+          description: The name of the enquiry source, e.g campaign name, listing page name.
+        type:
+          type: string
+          description: The type of the enquiry source, e.g campaign type, listing inspection type.
+    ExternalIdentifiers:
+      type: object
+      properties:
+        externalProjectId:
+          type: string
+          description: External project identifier setup by CRM / customer.
+        externalListingId:
+          type: string
+          description: The partner's identifier for the listing. This is used to replace
+            the old `listing.externalListingId` field.
+    CustomAttributes:
+      type: object
+      additionalProperties:
+        type: string
+    Error:
+      type: object
+      properties:
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        title:
+          type: string
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            lead:enquiries:read: Read enquiry records

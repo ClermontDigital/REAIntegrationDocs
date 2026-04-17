@@ -1,0 +1,716 @@
+# ==============================================================================
+# IMPORTANT
+# ---------
+#
+# Original File found at https://git.realestate.com.au/team-dc/vision-api/blob/master/swagger/campaign-display-performance-api-v1.prod.swagger.yaml
+#
+# This is the master file for the API exposed via Partner Platform. A subset of information in
+# campaign-display-performance-api-v1.internal.swagger.yaml
+# Note: make sure to include the api-common.yml file changes if exported
+# ==============================================================================
+openapi: 3.0.0
+info:
+  title: Campaign API - display performance
+  description: Aggregated reporting data for developer campaign display performance.
+  version: 0.0.3
+servers:
+  - url: https://api.realestate.com.au
+tags:
+  - name: Campaign
+  - name: Flight
+  - name: Creative
+security:
+  - PartnerPlatform:
+      - display:campaign-performance:read
+paths:
+  /campaign/v1/display-performance:
+    get:
+      tags:
+        - Campaign
+      summary: Get multiple campaigns
+      description: |
+        Returns a paginated collection of campaigns
+      parameters:
+        - name: "where[name][iLike]"
+          in: query
+          description: Find all campaigns where name contains a given value
+          schema:
+            type: string
+            example: "Super-special-campaign"
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/status'
+        - name: product
+          in: query
+          schema:
+            type: string
+            example: "Display"
+          description: Find all campaigns of a certain product type.
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/pageIndex'
+        - name: "sortBy[costPerLead]"
+          in: query
+          description: |
+            Specify the sorting field (`asc` or `desc`). Any field can be sorted by changing the value in the square brackets. For example, `sortBy[createdAt]=asc`
+          schema:
+            type: string
+            example: "asc"
+        - $ref: '#/components/parameters/listingId'
+        - name: excludeCommercialCampaigns
+          in: query
+          description: |
+            Passing "true" will exclude all the Commercial Native Ads campaigns from response, any other value will return both Commercial and Residential campaigns.
+          schema:
+            type: boolean
+            example: true
+      responses:
+        "200":
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignListResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntityError'
+        "429":
+          $ref: '#/components/responses/RateLimitedError'
+        "500":
+          $ref: '#/components/responses/Error'
+      security:
+        - PartnerPlatform:
+            - display:campaign-performance:read
+  /campaign/v1/display-performance/{campaignId}:
+    get:
+      tags:
+        - Campaign
+      summary: Get single campaign
+      description: |
+        Return a detailed campaign by campaign ID
+      parameters:
+        - $ref: '#/components/parameters/campaignId'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+      responses:
+        "200":
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CampaignResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntityError'
+        "429":
+          $ref: '#/components/responses/RateLimitedError'
+        "500":
+          $ref: '#/components/responses/Error'
+      security:
+        - PartnerPlatform:
+            - display:campaign-performance:read
+  /campaign/v1/display-performance/csv:
+    get:
+      tags:
+        - Campaign
+      summary: Get single or multiple campaigns in CSV format
+      description: |
+        Return single or multiple campaign `detail` or `snapshot` reports in a single CSV
+      parameters:
+        - name: campaignIds
+          in: query
+          description: Find campaign data where one or more campaign ids equal to a given value
+          required: true
+          schema:
+            type: string
+            example: "12345, 67890"
+        - name: filename
+          in: query
+          description: The filename of the downloaded csv. Default is `Campaigns Detail Report.csv`
+          schema:
+            type: string
+            example: "12345.csv"
+        - name: snapshot
+          in: query
+          description: Determine whether CSV returned is of snapshot or detail view
+          schema:
+            type: boolean
+            example: true
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+      responses:
+        "200":
+          description: Successful Operation
+          content:
+            text/csv: {}
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntityError'
+        "429":
+          $ref: '#/components/responses/RateLimitedError'
+        "500":
+          $ref: '#/components/responses/Error'
+      security:
+        - PartnerPlatform:
+            - display:campaign-performance:read
+  /campaign/v1/display-performance/{campaignId}/flights:
+    get:
+      tags:
+        - Flight
+      summary: Get flights
+      description: |
+        Returns a list of flights by campaign ID
+      parameters:
+        - $ref: '#/components/parameters/campaignId'
+        - $ref: '#/components/parameters/flightId'
+        - $ref: '#/components/parameters/creativeId'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/status'
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/pageIndex'
+        - $ref: '#/components/parameters/withDailyPerformance'
+      responses:
+        "200":
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FlightResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntityError'
+        "429":
+          $ref: '#/components/responses/RateLimitedError'
+        "500":
+          $ref: '#/components/responses/Error'
+      security:
+        - PartnerPlatform:
+            - display:campaign-performance:read
+  /{campaignId}/creatives:
+    get:
+      tags:
+        - Creative
+      summary: Get creatives
+      description: |
+        Returns a list of creatives by campaign ID
+      parameters:
+        - $ref: '#/components/parameters/campaignId'
+        - $ref: '#/components/parameters/flightId'
+        - $ref: '#/components/parameters/creativeId'
+        - $ref: '#/components/parameters/startDate'
+        - $ref: '#/components/parameters/endDate'
+        - $ref: '#/components/parameters/pageSize'
+        - $ref: '#/components/parameters/pageIndex'
+        - $ref: '#/components/parameters/withDailyPerformance'
+      responses:
+        "200":
+          description: Successful Operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreativeResponse'
+        "400":
+          $ref: '#/components/responses/BadRequestError'
+        "422":
+          $ref: '#/components/responses/UnprocessableEntityError'
+        "429":
+          $ref: '#/components/responses/RateLimitedError'
+        "500":
+          $ref: '#/components/responses/Error'
+      security:
+        - PartnerPlatform:
+            - display:campaign-performance:read
+
+components:
+  parameters:
+    listingId:
+      in: query
+      name: listingId
+      description: Return campaign list given a specific listing ID
+      example: "5123456"
+      schema:
+        type: string
+    campaignId:
+      in: path
+      name: campaignId
+      schema:
+        type: string
+      required: true
+      description: Return data given a specific campaign ID
+    flightId:
+      in: query
+      name: flightId
+      example: "12345"
+      schema:
+        type: string
+      description: Find all flights where contains given flightId
+    creativeId:
+      in: query
+      name: creativeId
+      example: "12345"
+      schema:
+        type: string
+      description: Find all creatives where contains given creativeId
+    startDate:
+      name: startDate
+      in: query
+      description: Start date greater than or equal to a given date (iso date)
+      schema:
+        type: string
+        example: "2023-09-16"
+    endDate:
+      name: endDate
+      in: query
+      description: End date less than or equal to a given date (iso date)
+      schema:
+        type: string
+        example: "2023-09-16"
+    pageSize:
+      name: pageSize
+      in: query
+      description: "Specify the number of results to return in one request, specified as an integer from `1` to `100`"
+      schema:
+        type: integer
+        example: 1
+    pageIndex:
+      name: pageIndex
+      in: query
+      description: Specify the page index of results to return. Zero index based.
+      schema:
+        type: integer
+        example: 1
+    withDailyPerformance:
+      in: query
+      name: withDailyPerformance
+      schema:
+        type: string
+        example: 'true'
+      description: Specify whether includes daily performance
+    status:
+      name: status
+      in: query
+      description: "Find all campaigns of a certain status. Available statuses are `Active`, `Pending`, `Completed` and `Unknown`."
+      schema:
+        type: string
+        example: "Active"
+  responses:
+    Unauthorized:
+      description: Unauthorized to access that campaign resource
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: "Unauthorized"
+    Error:
+      description: A general error has occurred. Inspect the payload for additional information
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    UnprocessableEntityError:
+      description: 422 Unprocessable Entity
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadRequestError:
+      description: Bad request. The request is missing required fields or is malformed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimitedError:
+      description: Too Many Requests. You have exceeded the maximum number of requests permitted.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  schemas:
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+    Links:
+      type: object
+      properties:
+        self:
+          type: object
+          properties:
+            href:
+              type: string
+              example: "https://exampleurl.com"
+        next:
+          type: object
+          properties:
+            href:
+              type: string
+              nullable: true
+              example: "https://exampleurl.com?page=2"
+    SelfLink:
+      type: object
+      properties:
+        self:
+          type: object
+          properties:
+            href:
+              type: string
+              example: "https://exampleurl.com"
+    AccountManager:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "4444"
+        name:
+          type: string
+          example: "Owen Wilson"
+    Advertiser:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "3333"
+        name:
+          type: string
+          example: "Agency Limited"
+    BasicCampaign:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "11111"
+        name:
+          type: string
+          example: "Harmik Estates"
+        product:
+          type: string
+          example: "Display"
+        status:
+          type: string
+          example: "active"
+        accountManager:
+          $ref: '#/components/schemas/AccountManager'
+        advertiser:
+          $ref: '#/components/schemas/Advertiser'
+        createdAt:
+          type: string
+          example: "2021-09-16 13:00:00"
+        startDate:
+          type: string
+          example: "2021-09-17 13:00:00"
+        endDate:
+          type: string
+          example: "2021-09-18 13:00:00"
+        impressionsGoal:
+          type: string
+          example: "8"
+        impressionsDelivered:
+          type: string
+          example: "2"
+        clicksDelivered:
+          type: string
+          example: "2"
+        leadsDelivered:
+          type: string
+          example: "2"
+        clickThroughRate:
+          type: string
+          example: "50.00"
+        costPerLead:
+          type: string
+          example: "20.00"
+        budget:
+          type: string
+          example: "1000.00"
+        spend:
+          type: string
+          example: "0.00"
+        budgetRemaining:
+          type: string
+          example: "1000.00"
+        listingId:
+          type: string
+          example: "5123456"
+    CampaignListResponse:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/BasicCampaign'
+        _links:
+          $ref: '#/components/schemas/Links'
+        total:
+          type: integer
+          example: 20
+    CampaignResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "11111"
+        name:
+          type: string
+          example: "Harmik Estates"
+        product:
+          type: string
+          example: "Display"
+        status:
+          type: string
+          example: "active"
+        impressionsGoal:
+          type: string
+          example: "8"
+        budget:
+          type: string
+          example: "1000.00"
+        accountManager:
+          type: string
+          example: "Owen Wilson"
+        startDate:
+          type: string
+          example: "2021-09-16 13:00:00"
+        endDate:
+          type: string
+          example: "2021-09-17 13:00:00"
+        advertiser:
+          type: string
+          example: "Agency Limited"
+        updatedAt:
+          type: string
+          example: "2021-09-17 10:00:00"
+        impressionsDelivered:
+          type: string
+          example: "2"
+        clicksDelivered:
+          type: string
+          example: "2"
+        spend:
+          type: string
+          example: "0.00"
+        leadsDelivered:
+          type: string
+          example: "2"
+        costPerLead:
+          type: string
+          example: "20.00"
+        clickThroughRate:
+          type: string
+          example: "50.00"
+        clickThroughConversion:
+          type: string
+          example: "50.00"
+        listingId:
+          type: string
+          example: "5123456"
+        performance:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                type: object
+                properties:
+                  campaignId:
+                    type: string
+                    example: "11111"
+                  impressionsDelivered:
+                    type: string
+                    example: "1"
+                  clicksDelivered:
+                    type: string
+                    example: "1"
+                  leadsDelivered:
+                    type: string
+                    example: "1"
+                  leadsDeliveredPostClicks:
+                    type: string
+                    example: "1"
+                  leadsDeliveredPostImpressions:
+                    type: string
+                    example: "0"
+                  spend:
+                    type: string
+                    example: "0.00"
+                  day:
+                    type: string
+                    example: "1"
+        _links:
+          $ref: '#/components/schemas/SelfLink'
+    Performance:
+      type: object
+      properties:
+        impressionsDelivered:
+          type: string
+          example: "1"
+        clicksDelivered:
+          type: string
+          example: "1"
+        leadsDelivered:
+          type: string
+          example: "1"
+        leads:
+          type: object
+          properties:
+            delivered:
+              type: string
+              example: "1"
+            deliveredPostClicks:
+              type: string
+              example: "1"
+            deliveredPostImpressions:
+              type: string
+              example: "0"
+        spend:
+          type: string
+          example: "0.00"
+        clickThroughRate:
+          type: string
+          example: "50.00"
+        costPerLead:
+          type: string
+          example: "20.00"
+        costPerClick:
+          type: string
+          example: "10.00"
+        postEngagement:
+          type: object
+          nullable: true
+          properties:
+            postComments:
+              type: string
+              example: "1"
+            postShares:
+              type: string
+              example: "1"
+            postReactions:
+              type: string
+              example: "1"
+            pageLikes:
+              type: string
+              example: "1"
+    DailyPerformance:
+      type: array
+      items:
+        allOf:
+          - $ref: '#/components/schemas/Performance'
+          - properties:
+              day:
+                type: string
+                example: "2023-09-16"
+    Flight:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "2222"
+        name:
+          type: string
+          example: "VIC_campaign"
+        startDate:
+          type: string
+          example: "2021-09-17 10:00:00"
+        endDate:
+          type: string
+          example: "2021-09-17 10:00:00"
+        productRateType:
+          type: string
+          example: "CPM"
+        type:
+          type: string
+          example: "Lead Ad"
+        adType:
+          type: string
+          example: "CPM"
+        impressionsGoal:
+          type: string
+          example: "1"
+        budget:
+          type: string
+          example: "1"
+        status:
+          type: string
+          example: "pending"
+        channel:
+          type: string
+          example: "FB Newsfeed"
+          nullable: true
+        performance:
+          $ref: '#/components/schemas/Performance'
+        dailyPerformance:
+          $ref: '#/components/schemas/DailyPerformance'
+    FlightResponse:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Flight'
+        _links:
+          $ref: '#/components/schemas/Links'
+        total:
+          type: integer
+          example: 50
+    Creative:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "2222"
+        name:
+          type: string
+          example: "VIC_ad_creative"
+        imageUrl:
+          type: string
+          example: "https://www.placecage.com/50/50"
+        type:
+          type: string
+          example: "Link Ad"
+        channel:
+          type: string
+          example: "FB Newsfeed"
+        performance:
+          $ref: '#/components/schemas/Performance'
+        dailyPerformance:
+          $ref: '#/components/schemas/DailyPerformance'
+    CreativeResponse:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/Creative'
+        _links:
+          $ref: '#/components/schemas/Links'
+        total:
+          type: integer
+          example: 50
+
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            display:campaign-performance:read: Read campaign performance records

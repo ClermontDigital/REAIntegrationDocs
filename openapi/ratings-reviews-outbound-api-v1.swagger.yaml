@@ -1,0 +1,406 @@
+openapi: 3.0.2
+info:
+  title: Rating reviews outbound API
+  description: This API allows partners to retrieve ratings and reviews information for agents and agencies listed on realestate.com.au. It provides endpoints to fetch ratings and reviews based on agent profile IDs or agency IDs, as well as aggregate statistics such as average ratings and total review counts.
+  version: 1.0.0
+servers:
+  - url: https://api.realestate.com.au/customer-profile/v1/ratings-reviews
+security:
+  - PartnerPlatform: []
+paths:
+  /agents/{agentProfileIds}/stats:
+    get:
+      tags:
+        - Agents stats
+      description: Get agent stats by a list of profileIds
+      operationId: GetAgentsStats
+      parameters:
+        - name: agentProfileIds
+          in: path
+          description: The agent profile ids delimited by comma in string format
+          required: true
+          example: "12345,56789"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentsStats"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal service error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /agent/{agentProfileId}:
+    get:
+      tags:
+        - Agent ratings reviews
+      description: Get ratings and reviews information by profileId
+      operationId: GetAgentReviewsDoc
+      parameters:
+        - name: agentProfileId
+          in: path
+          description: The agent profile id
+          required: true
+          schema:
+            type: string
+          example: 12345
+        - name: page
+          in: query
+          description: Either `since` or `page` is required! Unique identifer representing the page
+          required: true
+          example: cGFnZTo1LHNpemU6MTA=
+          schema:
+            type: string
+        - name: since
+          in: query
+          description: Either `since` or `page` is required! Filter reviews from a specific time (UTC Time) in ISO format.
+          required: true
+          example: 2010-09-06T12:27:00.1Z
+          schema:
+            type: string
+        - name: ratings
+          in: query
+          description: Filter reviews rating values delimited by comma in string format, default '1,2,3,4,5'
+          example: "1,2,3"
+          required: false
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: Order options for ratings reviews, DESC or ASC, default DESC.
+          required: false
+          schema:
+            type: string
+            enum:
+              - ASC
+              - DESC
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RatingsReviews"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal service error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /agencies/{agencyIds}/stats:
+    get:
+      tags:
+        - Agencies stats
+      description: Get agency stats by a list of agencyIds
+      operationId: GetAgenciesStats
+      parameters:
+        - name: agencyIds
+          in: path
+          description: the agencyIds delimited by comma in string format.
+          required: true
+          example: "QWERTY,ASDFGG"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgenciesStats"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal service error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /agencies/{agencyIds}:
+    get:
+      tags:
+        - Agency ratings reviews
+      description: Get ratings and reviews information by a list of agencyIds
+      operationId: GetAgenciesReviewsDoc
+      parameters:
+        - name: agencyIds
+          in: path
+          description: the agencyIds delimited by comma in string format
+          required: true
+          example: "QWERTY,ASDFGG"
+          schema:
+            type: string
+        - name: page
+          in: query
+          description: Either `since` or `page` is required! Unique identifer representing the page
+          required: true
+          example: cGFnZTo1LHNpemU6MTA=
+          schema:
+            type: string
+        - name: since
+          in: query
+          description: Either `since` or `page` is required! Filter reviews from a specific time (UTC Time) in ISO format.
+          required: true
+          example: 2010-09-06T12:27:00.1Z
+          schema:
+            type: string
+        - name: ratings
+          in: query
+          description: Filter reviews rating values delimited by comma in string format, default '1,2,3,4,5'
+          example: "1,2,3"
+          required: false
+          schema:
+            type: string
+        - name: order
+          in: query
+          description: Order options for ratings reviews, DESC or ASC, default DESC.
+          required: false
+          schema:
+            type: string
+            enum:
+              - ASC
+              - DESC
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RatingsReviews"
+        "400":
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: Internal service error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            type: string
+      required:
+        - errors
+    AgentStats:
+      type: object
+      properties:
+        profileId:
+          type: string
+          example: 123456
+        averageRating:
+          type: number
+          format: float
+          example: 4.782
+        reviewsCount:
+          type: integer
+          format: int32
+          example: 13
+      required:
+        - profileId
+        - averageRating
+        - reviewsCount
+    AgentsStats:
+      type: object
+      properties:
+        agentsStats:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentStats"
+      required:
+        - agentsStats
+    RatingReview:
+      type: object
+      properties:
+        rating:
+          type: integer
+          format: int32
+          example: 5
+          description: Integer rating value ranged from 1 to 5
+        content:
+          type: string
+          description: review content
+        listing:
+          type: object
+          properties:
+            id:
+              type: string
+              description: listing id
+            _links:
+              type: object
+              description: listing page url
+              properties:
+                self:
+                  $ref: "#/components/schemas/Link"
+          required:
+            - id
+            - _links
+        reviewer:
+          type: object
+          properties:
+            role:
+              type: string
+              description: reviewer role type, buyer or seller
+              example: buyer
+            name:
+              type: string
+              description: reviewer name, first name and first letter of last name
+              example: Peter K
+          required:
+            - role
+            - name
+        agent:
+          type: object
+          properties:
+            profileId:
+              type: string
+              example: 999999
+            name:
+              type: string
+              nullable: true
+              description: agent name
+              example: Charlie Smith
+            emailAddresses:
+              type: array
+              items:
+                type: string
+              example: ["charlie@smith.com"]
+              description: a list of agent email addresses
+            _links:
+              type: object
+              properties:
+                self:
+                  $ref: "#/components/schemas/Link"
+          required:
+            - profileId
+            - name
+            - emailAddresses
+            - _links
+        agency:
+          type: object
+          properties:
+            id:
+              type: string
+              example: FUUVDN
+            name:
+              type: string
+              nullable: true
+              example: Jellis Craig Whitehorse
+            _links:
+              type: object
+              description: Agency profile page url
+              properties:
+                self:
+                  $ref: "#/components/schemas/Link"
+          required:
+            - id
+            - name
+            - _links
+        createdDate:
+          type: string
+      required:
+        - rating
+        - content
+        - listing
+        - reviewer
+        - agent
+        - agency
+        - createdDate
+    RatingsReviews:
+      type: object
+      properties:
+        totalCount:
+          type: integer
+          format: int32
+          description: total reviews count based on the filter
+          example: 123
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+            prev:
+              $ref: "#/components/schemas/Link"
+          required:
+            - self
+            - next
+            - prev
+        result:
+          type: array
+          items:
+            $ref: "#/components/schemas/RatingReview"
+      required:
+        - totalCount
+        - _links
+        - result
+    AgencyStats:
+      type: object
+      properties:
+        agencyId:
+          type: string
+          example: FUUVDN
+        averageRating:
+          type: number
+          format: float
+          example: 4.33
+        reviewsCount:
+          type: integer
+          format: int32
+          example: 123
+      required:
+        - agencyId
+        - averageRating
+        - reviewsCount
+    AgenciesStats:
+      type: object
+      properties:
+        agenciesStats:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgencyStats"
+      required:
+        - agenciesStats
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          description: Hyperlink to an API resource
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token

@@ -1,0 +1,463 @@
+openapi: 3.1.1
+info:
+  title: Campaign API
+  description: Retrieve listing performance reports for property advertising campaigns
+  version: 1.6.9
+servers:
+  - url: https://api.realestate.com.au/campaign/v1
+tags:
+  - name: Listing Performance
+security:
+  - PartnerPlatform:
+      - campaign:listing-performance:read
+paths:
+  /listing-performance:
+    get:
+      operationId: getListingPerformance
+      summary: Get multiple listing performance reports by agency ID
+      description: >
+        The /listing-performance endpoint returns a collection of listing
+        performance reports
+
+        for property advertising campaigns. The response includes reports for
+        listings that match
+
+        the supplied query parameters. Each listing performance report includes
+        details about the
+
+        listing, and a list of portal metrics for the report period.
+
+
+        Each portal metrics object contains metrics at two different aggregation
+        levels:
+
+        * all (totals for the whole reporting period)
+
+        * daily (totals for calendar dates for the whole reporting period)
+
+
+        Supports the following query parameters:
+
+        * agency_id
+
+
+        **Not available for Commercial listings performance.*
+      parameters:
+        - schema:
+            type: string
+          name: agency_id
+          in: query
+          description: Unique identifier representing the listing agency.
+          required: true
+      tags:
+        - Listing Performance
+      responses:
+        "200":
+          description: A set of listing performance reports for the supplied query.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/ListingPerformanceItems"
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "401":
+          description: The request requires a valid authentication token
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "403":
+          description: Access to the requested resource is forbidden
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "404":
+          description: No listing-performance resources were found for the requested
+            parameters
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        default:
+          description: Unexpected error
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+      security:
+        - PartnerPlatform:
+            - campaign:listing-performance:read
+  /listing-performance/{listing_id}:
+    get:
+      operationId: getListingPerformanceById
+      summary: Get single listing performance report by listing ID
+      description: >
+        The /listing-performance/:listing_id endpoint returns a single listing
+        performance
+
+        report for a property advertising campaign. The response is a report for
+        the listing that
+
+        matches the supplied listing ID. The listing performance report includes
+        details about the
+
+        listing, and a list of portal metrics for the report period.
+
+
+        Each portal metrics object contains metrics at two different aggregation
+        levels:
+
+        * all (totals for the whole reporting period)
+
+        * daily (totals for calendar dates for the whole reporting period)
+      parameters:
+        - schema:
+            type: string
+          name: listing_id
+          in: path
+          description: Unique identifier representing a specific listing
+          required: true
+      tags:
+        - Listing Performance
+      responses:
+        "200":
+          description: A listing performance report for the supplied listing ID.
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/ListingPerformance"
+        "400":
+          description: The request is missing required fields or is malformed
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "401":
+          description: The request requires a valid authentication token
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        "403":
+          description: Access to the requested resource is forbidden
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+        default:
+          description: Unexpected error
+          content:
+            application/hal+json:
+              schema:
+                $ref: "#/components/schemas/Errors"
+      security:
+        - PartnerPlatform:
+            - campaign:listing-performance:read
+components:
+  schemas:
+    ListingPerformanceItems:
+      type: object
+      properties:
+        _embedded:
+          type: object
+          properties:
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/ListingPerformance"
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+            prev:
+              $ref: "#/components/schemas/Link"
+            next:
+              $ref: "#/components/schemas/Link"
+    ListingPerformance:
+      type: object
+      properties:
+        _links:
+          type: object
+          properties:
+            self:
+              $ref: "#/components/schemas/Link"
+        id:
+          type: string
+          description: Unique identifier representing a specific listing (listing_id).
+        dataSourceLastUpdated:
+          $ref: "#/components/schemas/DataSourceLastUpdated"
+        lastModifiedAt:
+          type: string
+          format: dateTime
+          description: Date/time that the listing performance report was last modified.
+        listing:
+          $ref: "#/components/schemas/Listing"
+        reportingPeriod:
+          $ref: "#/components/schemas/ReportingPeriod"
+        portalMetrics:
+          type: array
+          description: Array of portal metrics for the listing campaign.
+          items:
+            $ref: "#/components/schemas/PortalMetric"
+        productMetrics:
+          type: array
+          description: Array of product metrics for the listing campaign.
+          items:
+            $ref: "#/components/schemas/ProductMetrics"
+    Listing:
+      type: object
+      description: Listing to which listing performance report relates.
+      properties:
+        id:
+          type: string
+          description: Unique identifier representing a specific listing.
+        externalListingId:
+          type: string
+          description: External listing identifier provided by the agency or CRM platform.
+        agencyId:
+          type: string
+          description: Unique identifier representing the listing agency.
+    DataSourceLastUpdated:
+      type: object
+      description: Contains dates indicating data source currency
+      properties:
+        listingEvents:
+          type: string
+          format: date
+          description: Date that the data for Web, Mobile, SRP Impressions was last
+            refreshed.
+        audienceMaximiser:
+          type: string
+          format: date
+          description: Date that the data for Audience Maximiser was last refreshed. The
+            date will be null if there is no Audience Maximiser add on.
+        eBrochure:
+          type: string
+          format: date
+          description: Date that the data for eBrochure was last refreshed. The date will
+            be null if there is no eBrochure add on. **Not available for
+            Commercial listings.*
+        bundledNotifications:
+          type: string
+          format: date
+          description: Date that the data for Bundled Notifications was last refreshed.
+            The date will be null if there were no Bundled Notifications sent
+            for this listing.
+        amplify:
+          type: string
+          format: date
+          description: Date that the data for Luxe Home Page was last refreshed. The date
+            will be null if there is no Luxe Home Page add on.
+    ReportingPeriod:
+      type: object
+      description: Reporting period (inclusive) to which the listing performance
+        report applies.
+      properties:
+        startDate:
+          type: string
+          format: date
+          description: Start date of the reporting period (inclusive).
+        endDate:
+          type: string
+          format: date
+          description: End date of the reporting period (inclusive).
+    ProductMetrics:
+      type: object
+      properties:
+        productName:
+          type: string
+          description: This is the name of the add-on product eg. audienceMaximiser,
+            amplify, eBrochure, and bundledNotifications.
+        productPurchases:
+          type: array
+          description: Array of performance metrics for each purchaseId
+          items:
+            $ref: "#/components/schemas/ProductPurchaseMetrics"
+    ProductPurchaseMetrics:
+      type: object
+      properties:
+        purchaseId:
+          type: string
+          description: >
+            Also known as a booking id or payment id, this represent the
+            purchase of an add-on products for
+
+            which metrics are supplied. eg Audience Maximiser
+        purchaseType:
+          type: string
+          x-nullable: true
+          description: >
+            Type of product purchased. Only used when product name is
+            audienceMaximiser. Indicates the type of Audience Maximiser campaign
+            purchased.
+
+            Supports the following purchase types:
+
+            * click
+
+            * impression
+
+            * null
+        all:
+          type: array
+          description: Array of performance metrics, totalled for the whole campaign
+            reporting period.
+          items:
+            $ref: "#/components/schemas/Metric"
+        daily:
+          type: array
+          description: Array of performance metrics, totalled for daily periods.
+          items:
+            $ref: "#/components/schemas/Metric"
+    PortalMetric:
+      type: object
+      properties:
+        portalName:
+          type: string
+          description: >
+            Name of the advertising portal on which the listing or project
+            activity occurred.
+
+            Supports the following advertising portals:
+
+            * realestate_au (realestate.com.au)
+          enum:
+            - realestate_au
+        all:
+          type: array
+          description: Array of performance metrics, totalled for the whole campaign
+            reporting period.
+          items:
+            $ref: "#/components/schemas/Metric"
+        daily:
+          type: array
+          description: Array of performance metrics, totalled for daily periods.
+          items:
+            $ref: "#/components/schemas/Metric"
+    Metric:
+      type: object
+      properties:
+        metricName:
+          type: string
+          description: >
+            Name of the performance metric being measured.
+
+            Supports the following metric names:
+
+            * listingEvents (portal listing events for portal metrics)
+
+            * marketPerformance (market performance metrics for portal metrics)
+            
+            * audienceSourcePageView (audience source page view metrics for portal metrics)
+            
+            * audienceSourcePhoneReveal (audience source phone reveal metrics for portal metrics)
+            
+            * productSourcePageView (product source page view metrics for portal metrics)
+            
+            * emailEnquiryEvents (email enquiry events metrics for portal metrics)
+            
+            * intentToInspectEvents (inspect intention metrics for portal metrics)
+
+            * productSourceCampaignExposure (product source campaign exposure metrics for portal metrics)
+
+            * uniqueVisitorsEvents (unique visitors events metrics for portal metrics)
+
+            * videoViews (video views metrics for portal metrics)
+          
+            * productEvents (product events metrics for product metrics)
+            
+            * uniqueImpression (unique impression metrics for product metrics' audienceMaximiser)
+            
+            * publisherSourceAdImpression (publisher source ad impression metrics for product metrics' audienceMaximiser)
+            
+            * suburbs (suburbs metrics for product metrics' amplify)
+          enum:
+            - listingEvents
+            - marketPerformance
+            - audienceSourcePageView
+            - audienceSourcePhoneReveal
+            - productSourcePageView
+            - emailEnquiryEvents
+            - intentToInspectEvents
+            - productSourceCampaignExposure
+            - uniqueVisitorsEvents
+            - videoViews
+            - productEvents
+            - uniqueImpression
+            - publisherSourceAdImpression
+            - suburbs
+        metricType:
+          type: string
+          description: |
+            Type of the performance metric being measured.
+            Supports the following metric types:
+            * sum (integer sum)
+          enum:
+            - sum
+        metricPeriods:
+          type: array
+          description: Array of measured periods for the performance metric.
+          items:
+            $ref: "#/components/schemas/MetricPeriod"
+    MetricPeriod:
+      type: object
+      properties:
+        period:
+          type: string
+          description: Calendar period the metric values are totalled for.
+        metricValues:
+          type: array
+          description: Array of individual metric values for the period.
+          items:
+            $ref: "#/components/schemas/MetricValue"
+    MetricValue:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the individual performance data point being measured.
+        value:
+          type: number
+          description: Value of the individual performance data point being measured.
+    Link:
+      type: object
+      properties:
+        href:
+          type: string
+          description: Hyperlink to a Campaign API resource
+    Errors:
+      type: object
+      properties:
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Error"
+    Error:
+      type: object
+      properties:
+        status:
+          type: string
+        title:
+          type: string
+        detail:
+          type: string
+        meta:
+          type: object
+          properties:
+            transactionId:
+              type: string
+  securitySchemes:
+    PartnerPlatform:
+      type: oauth2
+      description: OAuth 2 Client Credentials grant flow
+      flows:
+        clientCredentials:
+          tokenUrl: https://api.realestate.com.au/oauth/token
+          scopes:
+            campaign:listing-performance:read: Read listing-performance records
